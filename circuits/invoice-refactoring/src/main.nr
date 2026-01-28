@@ -3,6 +3,7 @@ use std::hash::pedersen_hash;
 use std::schnorr::schnorr_verify;
 
 // @dev - The Invoice struct, which store the invoice details
+// @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the ERP system via zkTLS protocol.
 pub struct Invoice {
     invoice_id: Field,
     amount: Field,
