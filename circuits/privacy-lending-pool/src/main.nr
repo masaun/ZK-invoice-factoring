@@ -3,17 +3,22 @@ use poseidon::poseidon::bn254::{hash_1, hash_2, hash_3};
 
 // returns the new state commitment after withdrawal, if 0 means whole value of the note is consumed
 fn main(
-    value: Field,
-    secret: Field,
+    value: Field,       // @dev - "value": Current deposited-balance of user in the pool
+    // --- Current nullifier and secret ---
+    secret: Field,      // @dev - Salt to prevent pre-image attacks on commitment
     nullifier: Field,
-    new_secret: Field,
+    // --- New nullifier & secreat ---
+    new_secret: Field,  // @dev - Salt to prevent pre-image attacks on commitment
     new_nullifier: Field,
-    withdrawAmount: pub Field,
+
+    withdrawAmount: pub Field,  // @dev - Amount to be withdrawn from the pool
+
+    // --- Merkle proof parameters ---
     merkle_proof_length: u32,
     merkle_proof_indices: [u1; 16],
     merkle_proof_siblings: [Field; 16],
     merkle_root: pub Field,
-) -> pub [Field; 2] {
+) -> pub [Field; 2] { // @dev - Return: [nullifier_hash, new_commitment or 0]
     // check balance is sufficient
     assert(
         (withdrawAmount == value) | (withdrawAmount.lt(value)),
@@ -33,10 +38,15 @@ fn main(
 
     assert(merkle_root == _merkle_root, "merkle roots don't match");
 
+    // @dev - Calculate new deposited-balance of user in the pool - after withdrawal
+    // @dev - "new_balance": New deposited-balance of user in the pool
+    // @dev - "value": Current deposited-balance of user in the pool
     let new_balance = value - withdrawAmount;
+    
+    // @dev - "nullifier_hash": Hash of the "nullifier" to prevent double-spending
     let nullifier_hash = hash_1([nullifier]);
 
-    if new_balance == 0 {
+    if new_balance == 0 { // @dev - "new_balance == 0": New deposited-balance of user in the pool is equal to be "zero"
         [nullifier_hash, 0]
     } else {
         // return new state commitment
