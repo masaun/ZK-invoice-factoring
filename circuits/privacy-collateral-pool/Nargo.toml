@@ -1,5 +1,5 @@
 [package]
-name = "privacy_pool"
+name = "privacy_collateral_pool"
 type = "bin"
 authors = [""]
 

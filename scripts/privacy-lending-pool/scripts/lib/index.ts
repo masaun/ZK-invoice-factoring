@@ -5,7 +5,7 @@ import { Storage } from "./storage";
 import type { Note } from "../types";
 import { Noir } from "@noir-lang/noir_js";
 import { UltraHonkBackend, type ProofData } from "@aztec/bb.js";
-import circuit from "../../target/privacy_pool.json";
+import circuit from "../../../../circuits/privacy-lending-pool/target/privacy_lending_pool.json";
 
 export * from "./constants";
 
