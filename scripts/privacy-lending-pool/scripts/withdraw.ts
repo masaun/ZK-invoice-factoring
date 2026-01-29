@@ -12,9 +12,11 @@ const main = async () => {
 
   const { proof, newNote } = await generateProof(note, tree, 10);
 
-  const [value, nullifierHash, newCommitment] = proof.publicInputs.map(v => {
-    return BigInt(v);
-  });
+  // Public inputs/outputs: [withdrawAmount, merkle_root, nullifier_hash, new_commitment]
+  const publicValues = proof.publicInputs.map(v => BigInt(v));
+  const withdrawAmount = publicValues[0];
+  const nullifierHash = publicValues[2];
+  const newCommitment = publicValues[3];
 
   const proofVerification = await verifyProof(proof);
   if (!proofVerification) {
@@ -29,7 +31,7 @@ const main = async () => {
   await storage.insertNullifierHash(nullifierHash);
   console.log("Inserted nullifier hash into storage");
 
-  console.log("withdrawal processed successfully for amount: ", value);
+  console.log("withdrawal processed successfully for amount: ", withdrawAmount);
 
   if (newNote) {
     console.log("inserting new commitment into tree");

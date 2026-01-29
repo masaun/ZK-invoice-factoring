@@ -4,7 +4,7 @@ import { DB_PATH, TREE_ARITY, TREE_DEPTH, TREE_ZERO_VALUE } from "./constants";
 import { Storage } from "./storage";
 import type { Note } from "../types";
 import { Noir } from "@noir-lang/noir_js";
-import { UltraHonkBackend, type ProofData } from "@aztec/bb.js";
+import { Barretenberg, UltraHonkBackend, type ProofData } from "@aztec/bb.js";
 import circuit from "../../../../circuits/privacy-collateral-pool/target/privacy_collateral_pool.json";
 
 export * from "./constants";
@@ -57,7 +57,8 @@ export const generateProof = async (
   value?: number
 ): Promise<{ proof: ProofData; newNote: Note | null }> => {
   const noir = new Noir(circuit as any);
-  const backend = new UltraHonkBackend(circuit.bytecode);
+  const api = await Barretenberg.new();
+  const backend = new UltraHonkBackend(circuit.bytecode, api);
 
   const noteCommitmentIndex = tree.indexOf(note.commitment);
   const merkleProof = tree.createProof(noteCommitmentIndex);
@@ -69,12 +70,12 @@ export const generateProof = async (
   const newNoteNullifier = generateRandomInt();
 
   const { witness } = await noir.execute({
-    value: note.value,
-    secret: note.secret,
-    nullifier: note.nullifier,
-    new_secret: newNoteSecret,
-    new_nullifier: newNoteNullifier,
-    withdrawAmount: withdrawAmount,
+    value: note.value.toString(),
+    secret: note.secret.toString(),
+    nullifier: note.nullifier.toString(),
+    new_secret: newNoteSecret.toString(),
+    new_nullifier: newNoteNullifier.toString(),
+    withdrawAmount: withdrawAmount.toString(),
     merkle_proof_length: merkleProof.siblings.length,
     merkle_proof_indices: merkleProof.pathIndices,
     merkle_proof_siblings: merkleProof.siblings.map(v => {
@@ -104,7 +105,8 @@ export const generateProof = async (
 };
 
 export const verifyProof = async (proof: ProofData) => {
-  const backend = new UltraHonkBackend(circuit.bytecode);
+  const api = await Barretenberg.new();
+  const backend = new UltraHonkBackend(circuit.bytecode, api);
 
   return await backend.verifyProof(proof);
 };
