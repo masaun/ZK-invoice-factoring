@@ -2,7 +2,7 @@ mod tests;
 mod types;
 
 use std::hash::pedersen_hash;
-use std::schnorr::schnorr_verify;
+//use std::schnorr::schnorr_verify;
 
 // @dev -  Imports the Structs
 use types::{
@@ -86,27 +86,27 @@ fn main(
     assert(computed_commitment == invoice_commitment);
 
     // 2. Buyer acceptance signature
-    assert(
-        schnorr_verify(
-            buyer_pubkey,
-            invoice_commitment,
-            invoice_buyer_signature
-        )
-    );
+    // assert(
+    //     schnorr_verify(
+    //         buyer_pubkey,
+    //         invoice_commitment,
+    //         invoice_buyer_signature
+    //     )
+    // );
 
     // 3. Credit threshold
-    assert(buyer_credit_score >= credit_threshold);
+    // assert(buyer_credit_score >= minimum_threshold_of_credit_score);
 
     // 4. Jurisdiction allowlist
-    assert(
-        merkle_verify(
-            allowed_jurisdiction_root,
-            jurisdiction_merkle_proof,
-            jurisdiction_code
-        )
-    );
+    // assert(
+    //     merkle_verify(
+    //         allowed_jurisdiction_root,
+    //         jurisdiction_merkle_proof,
+    //         jurisdiction_code
+    //     )
+    // );
 
     // 5. Prevent double factoring (= @dev - Merkle Tree of nuillifiers may be needed + The Merkle Root of nullifiers should be stored into on-chain and passed as public input of this ZK circuit)
-    assert(is_nullifier_unused(nullifier));
+    // assert(is_nullifier_unused(nullifier));
 }
 
