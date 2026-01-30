@@ -43,6 +43,8 @@ struct PrivateInputs {
 
 /**
  * @notice - ZK circuit in Noir for the Invoice Refactoring
+ * @dev - This ZK proof generation request is supposed to be initiated from (or be claimed by) the Supplier side
+ * @dev - We assume that a Supplier already received an invoice acceptance (from a Buyer) via Supplier's ERP system or Email (sent from a Buyer's ERP system)
  */
 fn main(
     public_inputs: PublicInputs,
