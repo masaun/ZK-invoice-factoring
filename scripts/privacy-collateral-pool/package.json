@@ -20,8 +20,8 @@
     "gen-proof": "bun run scripts/gen_proof.ts"
   },
   "dependencies": {
-    "@aztec/bb.js": "^0.87.9",
-    "@noir-lang/noir_js": "^1.0.0-beta.7",
+    "@aztec/bb.js": "3.0.0-devnet.6-patch.1",
+    "@noir-lang/noir_js": "^1.0.0-beta.18",
     "@zk-kit/imt": "^2.0.0-beta.8",
     "poseidon-lite": "^0.3.0",
     "unstorage": "^1.16.0"

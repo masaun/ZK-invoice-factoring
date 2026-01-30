@@ -1,5 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# ZK circuits
+target
+circuits/**/target
+# circuits/privacy-lending-pool/target
+# circuits/privacy-collateral-pool/target
+
 # dependencies
 /node_modules
 /.pnp
