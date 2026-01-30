@@ -6,21 +6,40 @@ use std::schnorr::schnorr_verify;
 
 // @dev -  Imports the Structs
 use types::{
-    invoice::Invoice,
+    //invoice::Invoice,
     public_inputs::PublicInputs
 };
 
-// @dev - The PrivateInputs struct, which store the private inputs for the ZK circuit
-struct PrivateInputs {
-    invoice: Invoice,
-    buyer_signature: [Field; 2],
-    buyer_credit_score: Field,
+
+// @dev - The Invoice struct, which store the invoice details
+// @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the API of "Invoicing service" or "ERP systems" via zkTLS protocol.
+struct Invoice {
+    invoice_id: Field,
+    invoice_amount: Field,
+    invoice_due_date: Field,
+    invoice_acceptance_timestamp: Field,
+    invoice_buyer_id: Field,
+    invoice_buyer_signature: [Field; 2]
+}
+
+// @dev - The BuyerSolvency struct, which store the buyer's solvency details
+struct BuyerSolvency {
+    buyer_credit_score: Field
+}
+
+// @dev - The SanctionsCheck struct, which store the sanctions check details
+struct SanctionsCheck {
     jurisdiction_code: Field,
     allowed_jurisdiction_root: Field,
     jurisdiction_merkle_proof: [Field; 32],
 }
 
-
+// @dev - The PrivateInputs struct, which store the private inputs for the ZK circuit
+struct PrivateInputs {
+    invoice: Invoice,
+    buyer_solvency: BuyerSolvency,
+    sanctions_check: SanctionsCheck,
+}
 
 /**
  * @notice - ZK circuit in Noir for the Invoice Refactoring
@@ -32,20 +51,25 @@ fn main(
     // ----- PUBLIC INPUTS -----  
     let invoice_commitment = public_inputs.invoice_commitment;
     let buyer_pubkey = public_inputs.buyer_pubkey;
+    let buyer_domain_hash = public_inputs.buyer_domain_hash;
     let nullifier = public_inputs.nullifier;
-    let credit_threshold = public_inputs.credit_threshold;
+    let minimum_threshold_of_credit_score = public_inputs.minimum_threshold_of_credit_score;
 
-    // ----- PRIVATE INPUTS -----
+    // ----- PRIVATE INPUTS (Invoice) -----
     let invoice_id = private_inputs.invoice.invoice_id;
-    let invoice_amount = private_inputs.invoice.amount;
-    let invoice_due_date = private_inputs.invoice.due_date;
-    let invoice_buyer_id = private_inputs.invoice.buyer_id;
-    let buyer_signature = private_inputs.buyer_signature;
-    let buyer_credit_score = private_inputs.buyer_credit_score;
-    let jurisdiction_code = private_inputs.jurisdiction_code;
-    let allowed_jurisdiction_root = private_inputs.allowed_jurisdiction_root;
-    let jurisdiction_merkle_proof = private_inputs.jurisdiction_merkle_proof;
+    let invoice_amount = private_inputs.invoice.invoice_amount;
+    let invoice_due_date = private_inputs.invoice.invoice_due_date;
+    let invoice_acceptance_timestamp = private_inputs.invoice.invoice_acceptance_timestamp;
+    let invoice_buyer_id = private_inputs.invoice.invoice_buyer_id;
+    let invoice_buyer_signature = private_inputs.invoice.invoice_buyer_signature;
 
+    // ----- PRIVATE INPUTS (Buyer Solvency) -----
+    let buyer_credit_score = private_inputs.buyer_solvency.buyer_credit_score;
+
+    // ----- PRIVATE INPUTS (Sanctions Check) -----
+    let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
+    let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
+    let jurisdiction_merkle_proof = private_inputs.sanctions_check.jurisdiction_merkle_proof;
 
 
     // 1. Invoice commitment
@@ -64,7 +88,7 @@ fn main(
         schnorr_verify(
             buyer_pubkey,
             invoice_commitment,
-            buyer_signature
+            invoice_buyer_signature
         )
     );
 
