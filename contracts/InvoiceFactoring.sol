@@ -10,6 +10,10 @@ event InvoiceFactored(
     uint256 advanceAmount
 );
 
+/**
+ * @title 
+ * @notice - ZK InvoiceRefactoring Proof-triggered loan against an invoice
+ */
 contract InvoiceFactoring {
     HonkVerifier public verifier;
     Stablecoin public stablecoin;
@@ -22,6 +26,14 @@ contract InvoiceFactoring {
         stablecoin = _stablecoin;
     }
 
+    /**
+     * @notice - Factor an invoice using a ZK proof 
+     * @param zkProof 
+     * @param invoiceCommitment 
+     * @param nullifier 
+     * @param advanceAmount 
+     * @param supplier 
+     */
     function factorInvoice(
         bytes calldata zkProof,
         bytes32 invoiceCommitment,
