@@ -79,34 +79,38 @@ fn main(
         [
             invoice_id,
             invoice_amount,
-            invoice_due_date,
+            invoice_due_date, // maturity_date
             invoice_buyer_id,
         ]
     );
     assert(computed_commitment == invoice_commitment);
 
-    // 2. Buyer acceptance signature
-    // assert(
-    //     schnorr_verify(
-    //         buyer_pubkey,
-    //         invoice_commitment,
-    //         invoice_buyer_signature
-    //     )
-    // );
+    // 2. Check a Buyer's acceptance of the invoice
+    assert(
+        schnorr_verify(
+            buyer_pubkey(),
+            invoice_commitment,
+            buyer_signature
+        )
+    );
 
-    // 3. Credit threshold
-    // assert(buyer_credit_score >= minimum_threshold_of_credit_score);
+    // 3. Acceptance freshness
+    assert(acceptance_timestamp < maturity_date);
 
-    // 4. Jurisdiction allowlist
-    // assert(
-    //     merkle_verify(
-    //         allowed_jurisdiction_root,
-    //         jurisdiction_merkle_proof,
-    //         jurisdiction_code
-    //     )
-    // );
+    // 4. Authentic Buyer ERP
+    assert(verify_zk_tls(
+        zk_tls_transcript_hash,
+        buyer_domain_hash
+    ));
 
-    // 5. Prevent double factoring (= @dev - Merkle Tree of nuillifiers may be needed + The Merkle Root of nullifiers should be stored into on-chain and passed as public input of this ZK circuit)
-    // assert(is_nullifier_unused(nullifier));
+    // 5. Sanctions check (OFAC check)
+    assert(verify_merkle_proof(
+        jurisdiction_code,
+        allowed_jurisdiction_root,
+        jurisdiction_merkle_proof
+    ));
+
+    // 6. Prevent double factoring
+    assert(is_nullifier_unused(nullifier));
 }
 
