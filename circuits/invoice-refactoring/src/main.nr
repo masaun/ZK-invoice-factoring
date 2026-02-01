@@ -1,7 +1,15 @@
 mod tests;
+mod libs;
 mod types;
 
-use std::hash::pedersen_hash;
+use libs::poseidon::{
+    poseidon_hash_1, 
+    poseidon_hash_2, 
+    poseidon_hash_3, 
+    poseidon_hash_4
+};
+//use std::hash::pedersen_hash;
+
 //use std::schnorr::schnorr_verify;
 
 // @dev -  Imports the Structs
@@ -75,7 +83,7 @@ fn main(
 
 
     // 1. Invoice commitment
-    let computed_commitment = pedersen_hash(
+    let computed_commitment = poseidon_hash_4(
         [
             invoice_id,
             invoice_amount,

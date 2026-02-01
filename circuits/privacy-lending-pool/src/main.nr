@@ -1,9 +1,19 @@
+mod libs;
+//mod types;
+
 use binary_merkle_root::binary_merkle_root;
-use poseidon::poseidon::bn254::{hash_1, hash_2, hash_3};
+
+//use poseidon::poseidon::bn254::{hash_1, hash_2, hash_3};
+use libs::poseidon::{
+    poseidon_hash_1, 
+    poseidon_hash_2, 
+    poseidon_hash_3, 
+    poseidon_hash_4
+};
 
 // returns the new state commitment after withdrawal, if 0 means whole value of the note is consumed
 fn main(
-    deposited_balance: Field,       // @dev - "deposited_balance": Current deposited-balance of user in the pool
+    deposited_balance: Field,   // @dev - "deposited_balance" (formally "value"): Current deposited-balance of user in the pool
     // --- Current nullifier and secret ---
     secret: Field,      // @dev - Salt to prevent pre-image attacks on commitment
     nullifier: Field,
@@ -25,10 +35,10 @@ fn main(
         "withdraw amount exceeds balance",
     );
 
-    let commitment = hash_3([deposited_balance, secret, nullifier]);
+    let commitment = poseidon_hash_3([deposited_balance, secret, nullifier]);
     // Calculate Merkle root.
     let _merkle_root = binary_merkle_root(
-        hash_2,
+        poseidon_hash_2,
         commitment,
         merkle_proof_length,
         merkle_proof_indices,
@@ -43,13 +53,13 @@ fn main(
     let new_balance = deposited_balance - withdraw_amount;
     
     // @dev - "nullifier_hash": Hash of the "nullifier" to prevent double-spending
-    let nullifier_hash = hash_1([nullifier]);
+    let nullifier_hash = poseidon_hash_1([nullifier]);
 
     if new_balance == 0 { // @dev - "new_balance == 0": New deposited-balance of user in the pool is equal to be "zero"
         [nullifier_hash, 0]
     } else {
         // return new state commitment
-        [nullifier_hash, hash_3([new_balance, new_secret, new_nullifier])]
+        [nullifier_hash, poseidon_hash_3([new_balance, new_secret, new_nullifier])]
     }
 }
 
