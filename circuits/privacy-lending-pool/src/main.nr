@@ -3,7 +3,7 @@ use poseidon::poseidon::bn254::{hash_1, hash_2, hash_3};
 
 // returns the new state commitment after withdrawal, if 0 means whole value of the note is consumed
 fn main(
-    value: Field,       // @dev - "value": Current deposited-balance of user in the pool
+    deposited_balance: Field,       // @dev - "deposited_balance": Current deposited-balance of user in the pool
     // --- Current nullifier and secret ---
     secret: Field,      // @dev - Salt to prevent pre-image attacks on commitment
     nullifier: Field,
@@ -11,7 +11,7 @@ fn main(
     new_secret: Field,  // @dev - Salt to prevent pre-image attacks on commitment
     new_nullifier: Field,
 
-    withdrawAmount: pub Field,  // @dev - Amount to be withdrawn from the pool
+    withdraw_amount: pub Field,  // @dev - Amount to be withdrawn from the pool
 
     // --- Merkle proof parameters ---
     merkle_proof_length: u32,
@@ -21,12 +21,11 @@ fn main(
 ) -> pub [Field; 2] { // @dev - Return: [nullifier_hash, new_commitment or 0]
     // check balance is sufficient
     assert(
-        (withdrawAmount == value) | (withdrawAmount.lt(value)),
+        (withdraw_amount == deposited_balance) | (withdraw_amount.lt(deposited_balance)),
         "withdraw amount exceeds balance",
     );
 
-    let commitment = hash_3([value, secret, nullifier]);
-
+    let commitment = hash_3([deposited_balance, secret, nullifier]);
     // Calculate Merkle root.
     let _merkle_root = binary_merkle_root(
         hash_2,
@@ -40,8 +39,8 @@ fn main(
 
     // @dev - Calculate new deposited-balance of user in the pool - after withdrawal
     // @dev - "new_balance": New deposited-balance of user in the pool
-    // @dev - "value": Current deposited-balance of user in the pool
-    let new_balance = value - withdrawAmount;
+    // @dev - "deposited_balance": Current deposited-balance of user in the pool
+    let new_balance = deposited_balance - withdraw_amount;
     
     // @dev - "nullifier_hash": Hash of the "nullifier" to prevent double-spending
     let nullifier_hash = hash_1([nullifier]);
