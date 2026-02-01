@@ -61,7 +61,7 @@ struct PrivateInputs {
 fn main(
     public_inputs: PublicInputs,
     private_inputs: PrivateInputs
-) {
+) -> pub (Field, Field) {
     // ----- PUBLIC INPUTS -----  
     let invoice_commitment = public_inputs.invoice_commitment;
     let buyer_pubkey = public_inputs.buyer_pubkey;
@@ -138,7 +138,13 @@ fn main(
     // @dev - On the other hand, the "Merkle Inclusion" check can be done here in this Noir ZK circuit
     //
     // 6. Prevent double factoring
-    assert(is_nullifier_unused(nullifier));
+    // assert(is_nullifier_unused(nullifier));
+
+    // @dev - Compute a nullifier hash to prevent double factoring
+    let nullifier_hash = poseidon_hash_2([nullifier, secret]);
+
+    // @dev - Return the nullifier hash and "new" invoice commitment 
+    (nullifier_hash, invoice_commitment)
 }
 
 
