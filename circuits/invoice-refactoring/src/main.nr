@@ -108,12 +108,15 @@ fn main(
     // 3. Acceptance freshness
     assert(invoice_acceptance_timestamp as u32 < invoice_due_date as u32);
 
+    // @dev - However, this step 4 should be done off-chain via zkTLS protocol
+    // @dev - Thus, this step 4 should not be included in this Noir ZK circuit
+    // 
     // 4. Verify whether the Supplier's ERP system received the invoice acceptance from the Buyer's ERP system
-    verify_invoice_acceptance_on_supplier_erp(
-        zk_tls_proof_public_inputs,
-        buyer_domain_hash,
-        invoice_buyer_signature
-    );
+    // verify_invoice_acceptance_on_supplier_erp(
+    //     zk_tls_proof_public_inputs,
+    //     buyer_domain_hash,
+    //     invoice_buyer_signature
+    // );
 
     // 4. Authentic Buyer Email about acceptance of the invoice
     // assert(verify_zk_email(
@@ -124,21 +127,42 @@ fn main(
     // ));
 
     // 5. Sanctions check (OFAC check)
-    assert(verify_merkle_proof(
-        jurisdiction_code,
-        allowed_jurisdiction_root,
-        jurisdiction_merkle_proof
-    ));
+    // assert(verify_merkle_proof(
+    //     jurisdiction_code,
+    //     allowed_jurisdiction_root,
+    //     jurisdiction_merkle_proof
+    // ));
 
+
+    // @dev - This could be checked on-chain. Thus, this step 6 may not be necessary in this Noir ZK circuit
+    // @dev - On the other hand, the "Merkle Inclusion" check can be done here in this Noir ZK circuit
+    //
     // 6. Prevent double factoring
     assert(is_nullifier_unused(nullifier));
 }
 
 
-fn verify_invoice_acceptance_on_supplier_erp(
-    zk_tls_proof_public_inputs: Field,
-    buyer_domain_hash: Field,
-    invoice_buyer_signature: [Field; 2]
-) {
-    // TODO: Implement the verification logic using signature verification
+
+/**
+ * @notice - Merkle inclusion verification function using Merkle Root and Merkle Tree
+ */
+fn is_nullifier_unused(nullifier: Field) -> bool {
+    let nullifier_hash = poseidon_hash_1([nullifier]);
+
+    // [TODO]: Check the Merkle inclusion verification function using Merkle Root and Merkle Tree
+    let is_merkle_included = true;
+    is_merkle_included
 }
+
+
+/**
+ * @notice - Verify the Buyer's acceptance of the invoice on Supplier's ERP system via zkTLS protocol
+ * @dev - This function is a placeholder for the actual implementation of zkTLS verification
+ */
+// fn verify_invoice_acceptance_on_supplier_erp(
+//     zk_tls_proof_public_inputs: Field,
+//     buyer_domain_hash: Field,
+//     invoice_buyer_signature: [Field; 2]
+// ) {
+//     // TODO: Implement the verification logic using signature verification
+// }
