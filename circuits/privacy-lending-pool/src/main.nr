@@ -7,8 +7,7 @@ use binary_merkle_root::binary_merkle_root;
 use libs::poseidon::{
     poseidon_hash_1, 
     poseidon_hash_2, 
-    poseidon_hash_3, 
-    poseidon_hash_4
+    poseidon_hash_3
 };
 
 // returns the new state commitment after withdrawal, if 0 means whole value of the note is consumed
