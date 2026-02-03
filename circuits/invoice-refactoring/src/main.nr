@@ -145,7 +145,7 @@ fn main(
     //     invoice_buyer_signature
     // );
 
-    // 6. Authentic Buyer Email about acceptance of the invoice
+    // 6. Authenticate a Email about acceptance of the invoice from a Buyer's ERP system using zkEmail 
     // assert(verify_zk_email(
     //     zk_email_transcript_hash,
     //     buyer_email_domain_hash,
@@ -167,8 +167,12 @@ fn main(
     // 8. Prevent double factoring
     // assert(is_nullifier_unused(nullifier));
 
-    // @dev - Compute a nullifier hash to prevent double factoring
-    let nullifier_hash = poseidon_hash_2([nullifier, secret]);
+    // @dev - Check the nullifier computation
+    let computed_nullifier = poseidon_hash_3([invoice_commitment, merkle_root, secret]);
+    assert(nullifier == computed_nullifier, "invalid nullifier");
+
+    // @dev - Compute a nullifier hash, which is stored on-chain, to prevent double factoring
+    let nullifier_hash = poseidon_hash_1([nullifier]);
 
     // @dev - Return the nullifier hash and "new" invoice commitment 
     (nullifier_hash, invoice_commitment)
