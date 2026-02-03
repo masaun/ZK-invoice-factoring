@@ -26,12 +26,16 @@ use types::{
 // @dev - The Invoice struct, which store the invoice details
 // @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the API of "Invoicing service" or "ERP systems" via zkTLS protocol.
 struct Invoice {
+    invoice_commitment: Field,
     invoice_id: Field,
+    invoice_supplier_id: Field,
+    invoice_buyer_id: Field,
     invoice_amount: Field,
     invoice_due_date: Field,
     invoice_acceptance_timestamp: Field,
-    invoice_buyer_id: Field,
-    invoice_buyer_signature: [Field; 2]
+    //invoice_buyer_domain_hash: Field,
+    //invoice_buyer_pubkey: [Field; 2],
+    //invoice_buyer_signature: [Field; 2]
 }
 
 // @dev - The BuyerSolvency struct, which store the buyer's solvency details
@@ -72,19 +76,22 @@ fn main(
     private_inputs: PrivateInputs
 ) -> pub (Field, Field) {
     // ----- PUBLIC INPUTS -----  
-    let invoice_commitment = public_inputs.invoice_commitment;
-    let buyer_pubkey = public_inputs.buyer_pubkey;
-    let buyer_domain_hash = public_inputs.buyer_domain_hash;
     let nullifier = public_inputs.nullifier;
     let minimum_threshold_of_credit_score = public_inputs.minimum_threshold_of_credit_score;
 
     // ----- PRIVATE INPUTS (Invoice) -----
+    let invoice_commitment = private_inputs.invoice.invoice_commitment;
     let invoice_id = private_inputs.invoice.invoice_id;
+    let invoice_supplier_id = private_inputs.invoice.invoice_supplier_id;
+    let invoice_buyer_id = private_inputs.invoice.invoice_buyer_id;
     let invoice_amount = private_inputs.invoice.invoice_amount;
     let invoice_due_date = private_inputs.invoice.invoice_due_date;
     let invoice_acceptance_timestamp = private_inputs.invoice.invoice_acceptance_timestamp;
-    let invoice_buyer_id = private_inputs.invoice.invoice_buyer_id;
-    let invoice_buyer_signature = private_inputs.invoice.invoice_buyer_signature; // @dev - This Buyer's signature is used for signing the acceptance of the invoice on buyer side
+
+    // ----- PRIVATE INPUTS (Invoice - For a Buyer's RSA signature verification) -----
+    //let invoice_buyer_domain_hash = private_inputs.invoice.invoice_buyer_domain_hash;
+    //let invoice_buyer_signature = private_inputs.invoice.invoice_buyer_signature; // @dev - This Buyer's signature is used for signing the acceptance of the invoice on buyer side
+    //let invoice_buyer_pubkey = private_inputs.invoice.invoice_buyer_pubkey;
 
     // ----- PRIVATE INPUTS (Buyer Solvency) -----
     let buyer_credit_score = private_inputs.buyer_solvency.buyer_credit_score;
@@ -103,15 +110,14 @@ fn main(
     // ----- PRIVATE INPUTS (Others) -----
     let secret = private_inputs.secret;
 
-
     // 1. Constraint: new invoice commitment (to be refactored)
     let computed_invoice_commitment = poseidon_hash_6(
         [
             invoice_id,
+            invoice_supplier_id,
+            invoice_buyer_id,
             invoice_amount,
             invoice_due_date, // maturity_date
-            invoice_buyer_id,
-            nullifier,
             secret
         ]
     );
@@ -128,30 +134,25 @@ fn main(
     );
     assert(merkle_root == computed_merkle_root, "merkle roots don't match");
 
-    // 3. Constraint: Check a Buyer's acceptance of the invoice (on Supplier's ERP system or Supplier's Email by checking Email domain and Email subject/content using zkEmail)
-    let computed_invoice_buyer_signature: [Field; 2] = [12345, 12345]; // TOOD
-    assert(computed_invoice_buyer_signature == invoice_buyer_signature, "invalid invoice buyer signature");
-
-    // 4. Constraint: Acceptance freshness
+    // 3. Constraint: Acceptance freshness
     assert(invoice_acceptance_timestamp as u32 < invoice_due_date as u32);
 
-    // @dev - However, this step 4 should be done off-chain via zkTLS protocol
-    // @dev - Thus, this step 4 should not be included in this Noir ZK circuit
-    // 
-    // 5. Verify whether the Supplier's ERP system received the invoice acceptance from the Buyer's ERP system
-    // verify_invoice_acceptance_on_supplier_erp(
-    //     zk_tls_proof_public_inputs,
-    //     buyer_domain_hash,
-    //     invoice_buyer_signature
-    // );
+    // 4. Constraint: Check the Buyer's solvency (i.e., credit score)
+    assert(buyer_credit_score as u32 >= minimum_threshold_of_credit_score as u32, "insufficient credit score");
 
-    // 6. Authenticate a Email about acceptance of the invoice from a Buyer's ERP system using zkEmail 
+    // 5. Authenticate a Email about acceptance of the invoice from a Buyer's ERP system using zkEmail 
     // assert(verify_zk_email(
     //     zk_email_transcript_hash,
     //     buyer_email_domain_hash,
     //     expected_email_subject_hash,
     //     expected_email_body_hash
     // ));
+
+    // 6. Constraint: Verify whether the Buyer signature on acceptance of the invoice is valid
+    // [TODO]: RSA Key verification using Noir RSA library
+    // [TODO]: DKIM signature verification using zkemail.nr library may be more realistic approach than RSA signature verification - Because retrieving Buyer's public key of Buyer's ERP from Buyer's ERP system may be pretty much challenging.
+    //let computed_invoice_buyer_signature: [Field; 2] = [12345, 12345]; // TODO: Implement the actual signature verification
+    //assert(invoice_buyer_signature == computed_invoice_buyer_signature, "invalid invoice buyer signature");
 
     // 7. Sanctions check (OFAC check)
     // assert(verify_merkle_proof(
