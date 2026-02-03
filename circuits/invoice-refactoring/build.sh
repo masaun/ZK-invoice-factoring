@@ -40,8 +40,8 @@ bb gates -b target/invoice_refactoring.json | jq '.functions[0].circuit_size'
 echo "Creating target/vk directory..."
 mkdir -p "target/vk"
 
-echo "Copying invoice-refactoring.json to app/circuits/invoice-refactoring-$VERSION..."
-cp target/invoice_refactoring.json "../client-and-server/client/circuits/invoice-refactoring-$VERSION/invoice-refactoring.json"
+#echo "Copying invoice-refactoring.json to app/circuits/invoice-refactoring-$VERSION..."
+#cp target/invoice_refactoring.json "../client-and-server/client/circuits/invoice-refactoring-$VERSION/invoice-refactoring.json"
 
 echo "Generating a vkey (verification key)..."
 bb write_vk -b ./target/invoice_refactoring.json -o ./target/vk --oracle_hash keccak   # bb.js v3.0.0-nightly.20251104

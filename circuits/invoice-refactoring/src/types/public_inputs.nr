@@ -6,5 +6,6 @@ pub struct PublicInputs {
     pub buyer_pubkey: [Field; 2],
     pub buyer_domain_hash: Field,
     pub minimum_threshold_of_credit_score: Field,
-    pub nullifier: Field
+    pub nullifier: Field,
+    pub merkle_root: Field
 }

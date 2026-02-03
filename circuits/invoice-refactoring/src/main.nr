@@ -9,7 +9,8 @@ use libs::poseidon::{
     poseidon_hash_2, 
     poseidon_hash_3, 
     poseidon_hash_4,
-    poseidon_hash_5
+    poseidon_hash_5,
+    poseidon_hash_6
 };
 //use std::hash::pedersen_hash;
 
@@ -38,6 +39,13 @@ struct BuyerSolvency {
     buyer_credit_score: Field
 }
 
+// @dev - The MerkleProofParameters struct, which store the merkle proof parameter of invoice commitment merkle proof in the invoice commitments merkle tree.
+struct MerkleProofParameters {
+    merkle_proof_length: u32,
+    merkle_proof_indices: [u1; 16],
+    merkle_proof_siblings: [Field; 16]
+}
+
 // @dev - The SanctionsCheck struct, which store the sanctions check details
 struct SanctionsCheck {
     jurisdiction_code: Field,
@@ -49,6 +57,7 @@ struct SanctionsCheck {
 struct PrivateInputs {
     invoice: Invoice,
     buyer_solvency: BuyerSolvency,
+    merkle_proof_parameters: MerkleProofParameters,
     sanctions_check: SanctionsCheck,
     secret: Field      // @dev - Salt to prevent pre-image attacks on commitment
 }
@@ -80,6 +89,12 @@ fn main(
     // ----- PRIVATE INPUTS (Buyer Solvency) -----
     let buyer_credit_score = private_inputs.buyer_solvency.buyer_credit_score;
 
+    // --- Merkle proof parameters of invoices ---
+    let merkle_proof_length = private_inputs.merkle_proof_parameters.merkle_proof_length;
+    let merkle_proof_indices = private_inputs.merkle_proof_parameters.merkle_proof_indices;
+    let merkle_proof_siblings = private_inputs.merkle_proof_parameters.merkle_proof_siblings;
+    let merkle_root = public_inputs.merkle_root;
+
     // ----- PRIVATE INPUTS (Sanctions Check) -----
     let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
     let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
@@ -89,36 +104,48 @@ fn main(
     let secret = private_inputs.secret;
 
 
-    // 1. Invoice commitment
-    let computed_invoice_commitment = poseidon_hash_5(
+    // 1. Constraint: new invoice commitment (to be refactored)
+    let computed_invoice_commitment = poseidon_hash_6(
         [
             invoice_id,
             invoice_amount,
             invoice_due_date, // maturity_date
             invoice_buyer_id,
+            nullifier,
             secret
         ]
     );
-    assert(computed_invoice_commitment == invoice_commitment, "invalid invoice commitment");
+    assert(invoice_commitment == computed_invoice_commitment, "invalid invoice commitment");
 
-    // 2. Check a Buyer's acceptance of the invoice (on Supplier's ERP system or Supplier's Email by checking Email domain and Email subject/content using zkEmail)
+    // 2. Add a new invoice commitment to the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
+    // 2. Constraint: a Merkle Root of the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
+    let computed_merkle_root = binary_merkle_root(
+        poseidon_hash_2,
+        invoice_commitment,
+        merkle_proof_length,
+        merkle_proof_indices,
+        merkle_proof_siblings,
+    );
+    assert(merkle_root == computed_merkle_root, "merkle roots don't match");
+
+    // 3. Constraint: Check a Buyer's acceptance of the invoice (on Supplier's ERP system or Supplier's Email by checking Email domain and Email subject/content using zkEmail)
     let computed_invoice_buyer_signature: [Field; 2] = [12345, 12345]; // TOOD
     assert(computed_invoice_buyer_signature == invoice_buyer_signature, "invalid invoice buyer signature");
 
-    // 3. Acceptance freshness
+    // 4. Constraint: Acceptance freshness
     assert(invoice_acceptance_timestamp as u32 < invoice_due_date as u32);
 
     // @dev - However, this step 4 should be done off-chain via zkTLS protocol
     // @dev - Thus, this step 4 should not be included in this Noir ZK circuit
     // 
-    // 4. Verify whether the Supplier's ERP system received the invoice acceptance from the Buyer's ERP system
+    // 5. Verify whether the Supplier's ERP system received the invoice acceptance from the Buyer's ERP system
     // verify_invoice_acceptance_on_supplier_erp(
     //     zk_tls_proof_public_inputs,
     //     buyer_domain_hash,
     //     invoice_buyer_signature
     // );
 
-    // 4. Authentic Buyer Email about acceptance of the invoice
+    // 6. Authentic Buyer Email about acceptance of the invoice
     // assert(verify_zk_email(
     //     zk_email_transcript_hash,
     //     buyer_email_domain_hash,
@@ -126,7 +153,7 @@ fn main(
     //     expected_email_body_hash
     // ));
 
-    // 5. Sanctions check (OFAC check)
+    // 7. Sanctions check (OFAC check)
     // assert(verify_merkle_proof(
     //     jurisdiction_code,
     //     allowed_jurisdiction_root,
@@ -137,7 +164,7 @@ fn main(
     // @dev - This could be checked on-chain. Thus, this step 6 may not be necessary in this Noir ZK circuit
     // @dev - On the other hand, the "Merkle Inclusion" check can be done here in this Noir ZK circuit
     //
-    // 6. Prevent double factoring
+    // 8. Prevent double factoring
     // assert(is_nullifier_unused(nullifier));
 
     // @dev - Compute a nullifier hash to prevent double factoring
