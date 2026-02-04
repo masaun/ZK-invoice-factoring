@@ -1,7 +1,8 @@
 [package]
 name = "invoice_refactoring"
 type = "bin"
-authors = [""]
+authors = ["masaun"]
+version = "0.0.1"
 
 [dependencies]
 binary_merkle_root = { git = "https://github.com/privacy-scaling-explorations/zk-kit.noir", tag = "binary-merkle-root-v0.0.1", directory = "packages/binary-merkle-root" }
