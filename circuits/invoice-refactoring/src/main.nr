@@ -25,7 +25,7 @@ use types::{
 
 // @dev - The Invoice struct, which store the invoice details
 // @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the API of "Invoicing service" or "ERP systems" via zkTLS protocol.
-struct Invoice {
+pub struct Invoice {
     invoice_commitment: Field,
     invoice_id: Field,
     invoice_supplier_id: Field,
@@ -39,26 +39,26 @@ struct Invoice {
 }
 
 // @dev - The BuyerSolvency struct, which store the buyer's solvency details
-struct BuyerSolvency {
+pub struct BuyerSolvency {
     buyer_credit_score: Field
 }
 
 // @dev - The MerkleProofParameters struct, which store the merkle proof parameter of invoice commitment merkle proof in the invoice commitments merkle tree.
-struct MerkleProofParameters {
+pub struct MerkleProofParameters {
     merkle_proof_length: u32,
     merkle_proof_indices: [u1; 16],
     merkle_proof_siblings: [Field; 16]
 }
 
 // @dev - The SanctionsCheck struct, which store the sanctions check details
-struct SanctionsCheck {
+pub struct SanctionsCheck {
     jurisdiction_code: Field,
     allowed_jurisdiction_root: Field,
     jurisdiction_merkle_proof: [Field; 32],
 }
 
 // @dev - The PrivateInputs struct, which store the private inputs for the ZK circuit
-struct PrivateInputs {
+pub struct PrivateInputs {
     invoice: Invoice,
     buyer_solvency: BuyerSolvency,
     merkle_proof_parameters: MerkleProofParameters,
@@ -71,10 +71,10 @@ struct PrivateInputs {
  * @dev - This ZK proof generation request is supposed to be initiated from (or be claimed by) the Supplier side
  * @dev - We assume that a Supplier already received an invoice acceptance (from a Buyer) via Supplier's ERP system or Email (sent from a Buyer's ERP system)
  */
-fn main(
+pub fn main(
     public_inputs: PublicInputs,
     private_inputs: PrivateInputs
-) -> pub (Field, Field) {
+) -> pub (Field, Field, Field) {
     // ----- PUBLIC INPUTS -----  
     let nullifier = public_inputs.nullifier;
     let minimum_threshold_of_credit_score = public_inputs.minimum_threshold_of_credit_score;
@@ -176,7 +176,7 @@ fn main(
     let nullifier_hash = poseidon_hash_1([nullifier]);
 
     // @dev - Return the nullifier hash and "new" invoice commitment 
-    (nullifier_hash, invoice_commitment)
+    (nullifier_hash, invoice_commitment, merkle_root)
 }
 
 
@@ -184,13 +184,13 @@ fn main(
 /**
  * @notice - Merkle inclusion verification function using Merkle Root and Merkle Tree
  */
-fn is_nullifier_unused(nullifier: Field) -> bool {
-    let nullifier_hash = poseidon_hash_1([nullifier]);
+// fn is_nullifier_unused(nullifier: Field) -> bool {
+//     let nullifier_hash = poseidon_hash_1([nullifier]);
 
-    // [TODO]: Check the Merkle inclusion verification function using Merkle Root and Merkle Tree
-    let is_merkle_included = true;
-    is_merkle_included
-}
+//     // [TODO]: Check the Merkle inclusion verification function using Merkle Root and Merkle Tree
+//     let is_merkle_included = true;
+//     is_merkle_included
+// }
 
 
 /**
