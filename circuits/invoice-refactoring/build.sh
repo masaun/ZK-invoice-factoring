@@ -53,10 +53,10 @@ bb write_vk -b ./target/invoice_refactoring.json -o ./target/vk --oracle_hash ke
 echo "Generate a Solidity Verifier contract from the vkey..."
 bb write_solidity_verifier -k ./target/vk/vk -o ./target/Verifier.sol
 
-echo "Copy a Solidity Verifier contract-generated (Verifier.sol) into the ../contracts/src/circuits/honk-verifier directory"
-cp ./target/Verifier.sol ../contracts/src/circuits/honk-verifier
+echo "Copy a Solidity Verifier contract-generated (Verifier.sol) into the ../..contracts/src/circuits/honk-verifier directory"
+cp ./target/Verifier.sol ../../contracts/src/circuits/honk-verifier
 
-echo "Rename the Verifier.sol with the HonkVerifier.sol in the ../contracts/src/circuits/honk-verifier directory"
-mv ../contracts/src/circuits/honk-verifier/Verifier.sol ../contracts/src/circuits/honk-verifier/HonkVerifier.sol
+echo "Rename the Verifier.sol with the HonkVerifier.sol in the ../../contracts/src/circuits/honk-verifier directory"
+mv ../../contracts/src/circuits/honk-verifier/Verifier.sol ../../contracts/src/circuits/honk-verifier/InvoiceRefactoringHonkVerifier.sol
 #mv ../contracts/src/circuits/honk-verifier/Verifier.sol ../contracts/src/circuits/honk-verifier/honk_vk.sol
 echo "Done" 
