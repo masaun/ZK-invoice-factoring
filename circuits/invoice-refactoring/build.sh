@@ -36,19 +36,23 @@ bb gates -b target/invoice_refactoring.json | jq '.functions[0].circuit_size'
 #mkdir -p "../client-and-server/client/circuits/invoice-refactoring-$VERSION"
 #mkdir -p "../app/circuits/invoice-refactoring-$VERSION"
 
+# Create version-specific directory to the scripts directory
+echo "Creating version-specific directory for version $VERSION to the scripts directory..."
+mkdir -p "../../scripts/circuit-artifacts/invoice-refactoring/invoice-refactoring-$VERSION"
+
 # Generate the verification key (vkey)
 echo "Creating target/vk directory..."
 mkdir -p "target/vk"
 
-#echo "Copying invoice-refactoring.json to app/circuits/invoice-refactoring-$VERSION..."
-#cp target/invoice_refactoring.json "../client-and-server/client/circuits/invoice-refactoring-$VERSION/invoice-refactoring.json"
+echo "Copying invoice-refactoring.json to ../../scripts/circuit-artifacts/invoice-refactoring/invoice-refactoring-$VERSION..."
+cp target/invoice_refactoring.json "../../scripts/circuit-artifacts/invoice-refactoring/invoice-refactoring-$VERSION/invoice-refactoring.json"
 
 echo "Generating a vkey (verification key)..."
 bb write_vk -b ./target/invoice_refactoring.json -o ./target/vk --oracle_hash keccak   # bb.js v3.0.0-nightly.20251104
 #bb write_vk -b ./target/invoice_refactoring.json -o ./target/vk --oracle_hash keccak  # bb.js v0.87.0 (Same with v3.0.0-nightly.20251104)
 
-#echo "Generating vk.json to client-and-server/client/circuits/invoice-refactoring-$VERSION..."
-#node -e "const fs = require('fs'); fs.writeFileSync('../client-and-server/client/circuits/invoice-refactoring-$VERSION/vk.json', JSON.stringify(Array.from(Uint8Array.from(fs.readFileSync('./target/vk/vk')))));"
+echo "Generating vk.json to ../../scripts/circuit-artifacts/invoice-refactoring/invoice-refactoring-$VERSION..."
+node -e "const fs = require('fs'); fs.writeFileSync('../../scripts/circuit-artifacts/invoice-refactoring/invoice-refactoring-$VERSION/vk.json', JSON.stringify(Array.from(Uint8Array.from(fs.readFileSync('./target/vk/vk')))));"
 
 echo "Generate a Solidity Verifier contract from the vkey..."
 bb write_solidity_verifier -k ./target/vk/vk -o ./target/Verifier.sol
