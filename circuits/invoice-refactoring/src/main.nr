@@ -184,13 +184,13 @@ fn main(
 /**
  * @notice - Merkle inclusion verification function using Merkle Root and Merkle Tree
  */
-fn is_nullifier_unused(nullifier: Field) -> bool {
-    let nullifier_hash = poseidon_hash_1([nullifier]);
+// fn is_nullifier_unused(nullifier: Field) -> bool {
+//     let nullifier_hash = poseidon_hash_1([nullifier]);
 
-    // [TODO]: Check the Merkle inclusion verification function using Merkle Root and Merkle Tree
-    let is_merkle_included = true;
-    is_merkle_included
-}
+//     // [TODO]: Check the Merkle inclusion verification function using Merkle Root and Merkle Tree
+//     let is_merkle_included = true;
+//     is_merkle_included
+// }
 
 
 /**
