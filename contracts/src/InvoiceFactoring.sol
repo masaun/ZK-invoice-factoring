@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { HonkVerifier } from "./HonkVerifier.sol";
+import { InvoiceRefactoringHonkVerifier } from "./circuits/InvoiceRefactoringHonkVerifier.sol";
 import { Stablecoin } from "./Stablecoin.sol";
 
 event InvoiceFactored(
@@ -15,14 +15,14 @@ event InvoiceFactored(
  * @notice - ZK InvoiceRefactoring Proof-triggered loan against an invoice
  */
 contract InvoiceFactoring {
-    HonkVerifier public verifier;
+    InvoiceRefactoringHonkVerifier public invoiceRefactoringHonkVerifier;
     Stablecoin public stablecoin;
 
     mapping(bytes32 => bool) public usedNullifiers;
     mapping(bytes32 => address) public invoiceOwner;
 
-    constructor(HonkVerifier _verifier, Stablecoin _stablecoin) {
-        verifier = _verifier;
+    constructor(HonkVerifier _invoiceRefactoringHonkVerifier, Stablecoin _stablecoin) {
+        invoiceRefactoringHonkVerifier = _invoiceRefactoringHonkVerifier;
         stablecoin = _stablecoin;
     }
 
@@ -35,15 +35,15 @@ contract InvoiceFactoring {
      * @param supplier 
      */
     function factorInvoice(
-        bytes calldata zkProof,
-        bytes32 invoiceCommitment,
+        bytes calldata proof, 
+        bytes32[] calldata publicInputs,
         bytes32 nullifier,
         uint256 advanceAmount,
         address supplier
     ) external {
-        // 1. Verify ZK proof
+        // 1. Verify a InvoiceRefactoringProof
         require(
-            verifier.verifyProof(zkProof, invoiceCommitment, nullifier),
+            invoiceRefactoringHonkVerifier.verifyInvoiceRefactoringProof(proof, publicInputs),
             "Invalid ZK proof"
         );
 
@@ -52,12 +52,12 @@ contract InvoiceFactoring {
         usedNullifiers[nullifier] = true;
 
         // 3. Record ownership
-        invoiceOwner[invoiceCommitment] = msg.sender; // Factor
+        invoiceOwner[publicInputs[0]] = msg.sender; // Factor
 
         // 4. Pay supplier
         stablecoin.transfer(supplier, advanceAmount);
 
-        emit InvoiceFactored(invoiceCommitment, supplier, advanceAmount);
+        emit InvoiceFactored(publicInputs[0], supplier, advanceAmount);
     }
 }
 
