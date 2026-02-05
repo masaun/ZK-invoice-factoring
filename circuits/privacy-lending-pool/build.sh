@@ -60,6 +60,7 @@ echo "Copy a Solidity Verifier contract-generated (Verifier.sol) into the ../../
 cp ./target/Verifier.sol ../../contracts/src/circuits/honk-verifier
 
 echo "Rename the Verifier.sol with the HonkVerifier.sol in the ../../contracts/src/circuits/honk-verifier directory"
-mv ../../contracts/src/circuits/honk-verifier/Verifier.sol ../../contracts/src/circuits/honk-verifier/PrivacyLendingPoolHonkVerifier.sol
+mv ../../contracts/src/circuits/honk-verifier/Verifier.sol ../../contracts/src/circuits/honk-verifier/privacy-lending-pool-honk-verifier/HonkVerifier.sol
+#mv ../../contracts/src/circuits/honk-verifier/Verifier.sol ../../contracts/src/circuits/honk-verifier/PrivacyLendingPoolHonkVerifier.sol
 #mv ../../contracts/src/circuits/honk-verifier/Verifier.sol ../../contracts/src/circuits/honk-verifier/honk_vk.sol
 echo "Done" 
