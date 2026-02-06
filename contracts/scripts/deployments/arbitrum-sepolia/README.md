@@ -5,14 +5,14 @@ This directory contains scripts for deploying and verifying contracts on Arbitru
 ## 📁 Files
 
 ### Deployment Scripts
-- **deploy.sh** - Deploy all main contracts (HonkVerifier, InvoiceRefactoringHonkVerifier, InvoiceFactoring)
-- **deploy-mock-usdc.sh** - Deploy MockUSDC token for testing
+- **deploy.sh** - Deploy and verify all main contracts (HonkVerifier, InvoiceRefactoringHonkVerifier, InvoiceFactoring)
+  - Run normally to deploy: `./deploy.sh`
+  - Run with `--verify-only` flag to verify already deployed contracts
+- **deploy-mock-usdc.sh** - Deploy and verify MockUSDC token for testing
+  - Run normally to deploy: `./deploy-mock-usdc.sh`
+  - Run with `--verify-only` flag to verify already deployed MockUSDC
 - **Deploy.s.sol** - Solidity deployment script for main contracts
 - **DeployMockUSDC.s.sol** - Solidity deployment script for MockUSDC
-
-### Verification Scripts
-- **verify-contracts.sh** - Verify main contracts on Arbiscan
-- **verify-mock-usdc.sh** - Verify MockUSDC on Arbiscan
 
 ## 🚀 Quick Start
 
@@ -62,30 +62,41 @@ If `ARBISCAN_API_KEY` is set in `.env`, contracts will be automatically verified
 
 ### Manual Verification
 
-If automatic verification fails, use these scripts:
+If automatic verification fails, you can run the same scripts in verify-only mode:
 
 **Verify main contracts:**
 ```bash
-./verify-contracts.sh <honk_verifier_addr> <invoice_refactoring_honk_verifier_addr> <invoice_factoring_addr>
+# Interactive (prompts for addresses)
+./deploy.sh --verify-only
+
+# Or with addresses as arguments
+./deploy.sh --verify-only <honk_verifier_addr> <invoice_refactoring_honk_verifier_addr> <invoice_factoring_addr>
 ```
 
 **Verify MockUSDC:**
 ```bash
-./verify-mock-usdc.sh <mock_usdc_addr>
-```
+# Interactive (prompts for address)
+./deploy-mock-usdc.sh --verify-only
 
-The scripts will prompt for addresses if not provided as arguments.
+# Or with address as argument
+./deploy-mock-usdc.sh --verify-only <mock_usdc_addr>
+```
 
 ## 📋 Script Features
 
-All deployment scripts:
+All scripts support dual modes:
+- **Deployment mode** (default): Deploy contracts with optional automatic verification
+- **Verification mode** (`--verify-only` flag): Verify already deployed contracts
+
+Features:
 - ✅ Auto-detect contracts root directory (can run from anywhere)
 - ✅ Load `.env` from contracts root
 - ✅ Validate required environment variables
 - ✅ Build contracts before deployment
-- ✅ Support automatic Arbiscan verification
+- ✅ Support automatic Arbiscan verification during deployment
+- ✅ Interactive verification with address prompts
 - ✅ Provide clear success/error messages
-- ✅ Display deployment summary with addresses
+- ✅ Display deployment/verification summary with Arbiscan links
 
 ## 🌐 Arbiscan Links
 
@@ -117,9 +128,9 @@ After deployment, view your contracts:
 
 # 2. Update .env
 echo "USDC_ADDRESS=0x..." >> ../../../.env
-
-# 3. Deploy main contracts
-./deploy.sh
+ (if automatic verification failed):**
+```bash
+./deploy.sh --verify-only
 ```
 
 **Verify after deployment:**

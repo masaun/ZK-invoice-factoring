@@ -13,7 +13,8 @@ contract DeployScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         
         // Get the USDC token address from environment variable (or use a default for testing)
-        address usdcAddress = vm.envAddress("USDC_ADDRESS");
+        address usdcAddress = vm.envAddress("USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA");
+        //address usdcAddress = vm.envAddress("USDC_ADDRESS_OFFICIAL_ON_ARBITRUM_SEPOLIA");
         
         vm.startBroadcast(deployerPrivateKey);
 
