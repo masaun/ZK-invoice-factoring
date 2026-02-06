@@ -87,15 +87,14 @@ fn test_main_success() {
     // ----- PRIVATE INPUTS (Buyer Solvency) -----
     let buyer_credit_score = 750;
     
-    // --- Merkle proof parameters of invoices ---
-    let merkle_proof_length = 4;
-    let merkle_proof_indices: [u1; 16] = [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let merkle_proof_siblings: [Field; 16] = [
+    // ----- PRIVATE INPUTS (Merkle proof parameters of invoices) -----
+    let invoice_merkle_proof_length = 4;
+    let invoice_merkle_proof_indices: [u1; 16] = [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let invoice_merkle_proof_siblings: [Field; 16] = [
         0x111, 0x222, 0x333, 0x444,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ];
-    let merkle_root = 0x13d71b7e8100ee6ccb3c0228ada8585e4f8259d7a016191f7cd65342bc517530;
-
+    let invoice_merkle_root = 0x13d71b7e8100ee6ccb3c0228ada8585e4f8259d7a016191f7cd65342bc517530;
     // ----- PRIVATE INPUTS (Sanctions Check) -----
     let jurisdiction_code = 840; // USA country code
     let allowed_jurisdiction_root = 0x999888777666;
@@ -113,7 +112,7 @@ fn test_main_success() {
     let public_inputs = PublicInputs {
         nullifier,
         minimum_threshold_of_credit_score,
-        merkle_root
+        invoice_merkle_root
     };
     
     let private_inputs = PrivateInputs {
@@ -130,9 +129,9 @@ fn test_main_success() {
             buyer_credit_score
         },
         merkle_proof_parameters: MerkleProofParameters {
-            merkle_proof_length,
-            merkle_proof_indices,
-            merkle_proof_siblings
+            invoice_merkle_proof_length,
+            invoice_merkle_proof_indices,
+            invoice_merkle_proof_siblings
         },
         sanctions_check: SanctionsCheck {
             jurisdiction_code,
@@ -143,7 +142,7 @@ fn test_main_success() {
     };
 
     // @dev - Call the main function
-    let (nullifier_hash, invoice_commitment, merkle_root) = main(public_inputs, private_inputs);
+    let (invoice_merkle_root, nullifier_hash) = main(public_inputs, private_inputs);
 
     // @dev - Check Constraint: the invoice commitment (hash)
     let computed_invoice_commitment = poseidon_hash_6(
@@ -156,22 +155,22 @@ fn test_main_success() {
             secret
         ]
     );
-    println(f"Computed Invoice Commitment: {computed_invoice_commitment}");
+    println(f"computed_invoice_commitment: {computed_invoice_commitment}");
     assert(invoice_commitment == computed_invoice_commitment, "invalid invoice_commitment");
 
     // @dev - Check Constraint: a Merkle Root of the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
-    let computed_merkle_root = binary_merkle_root(
+    let computed_invoice_merkle_root = binary_merkle_root(
         poseidon_hash_2,
         invoice_commitment,
-        merkle_proof_length,
-        merkle_proof_indices,
-        merkle_proof_siblings,
+        invoice_merkle_proof_length,
+        invoice_merkle_proof_indices,
+        invoice_merkle_proof_siblings,
     );
-    println(f"computed_merkle_root: {computed_merkle_root}");
-    assert(merkle_root == computed_merkle_root, "merkle roots don't match");
+    println(f"computed_invoice_merkle_root: {computed_invoice_merkle_root}");
+    assert(invoice_merkle_root == computed_invoice_merkle_root, "merkle roots don't match");
 
     // @dev - Check Constraint: the nullifier_hash computation
-    let computed_nullifier = poseidon_hash_3([invoice_commitment, merkle_root, secret]);
+    let computed_nullifier = poseidon_hash_3([invoice_commitment, computed_invoice_merkle_root, secret]);
     println(f"computed_nullifier: {computed_nullifier}");
     let computed_nullifier_hash = poseidon_hash_1([nullifier]);
     assert(nullifier_hash == computed_nullifier_hash, "invalid nullifier_hash");
