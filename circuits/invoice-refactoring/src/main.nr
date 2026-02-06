@@ -12,19 +12,17 @@ use libs::poseidon::{
     poseidon_hash_5,
     poseidon_hash_6
 };
-//use std::hash::pedersen_hash;
-
-//use std::schnorr::schnorr_verify;
 
 // @dev -  Imports the Structs
 use types::{
-    //invoice::Invoice,
     public_inputs::PublicInputs
 };
 
+// @dev - The length of the Merkle proof for invoice commitment merkle proof
+pub global MERKLE_PROOF_LENGTH: u32 = 4;
+
 // @dev - The depth of the Merkle Tree for invoice commitments
-pub global MERKLE_TREE_DEPTH: u32 = 8;
-//pub global MERKLE_TREE_DEPTH: u32 = 16;
+pub global MERKLE_TREE_DEPTH: u32 = 16;
 
 // @dev - The Invoice struct, which store the invoice details
 // @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the API of "Invoicing service" or "ERP systems" via zkTLS protocol.
@@ -54,19 +52,19 @@ pub struct MerkleProofParameters {
 }
 
 // @dev - The SanctionsCheck struct, which store the sanctions check details
-// pub struct SanctionsCheck {
-//     jurisdiction_code: Field,
-//     allowed_jurisdiction_root: Field,
-//     jurisdiction_merkle_proof: [Field; 32],
-// }
+pub struct SanctionsCheck {
+    jurisdiction_code: Field,
+    allowed_jurisdiction_root: Field,
+    jurisdiction_merkle_proof: [Field; 32],
+}
 
 // @dev - The PrivateInputs struct, which store the private inputs for the ZK circuit
 pub struct PrivateInputs {
     invoice: Invoice,
     buyer_solvency: BuyerSolvency,
     merkle_proof_parameters: MerkleProofParameters,
-    nullifier: Field,  // @dev - Raw nullifier to prevent double factoring
-    //sanctions_check: SanctionsCheck,
+    sanctions_check: SanctionsCheck,
+    nullifier: Field,  // Raw nullifier to prevent double factoring
     secret: Field      // @dev - Salt to prevent pre-image attacks on commitment
 }
 
@@ -110,20 +108,19 @@ pub fn main(
     let nullifier = private_inputs.nullifier;
 
     // ----- PRIVATE INPUTS (Sanctions Check) -----
-    // let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
-    // let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
-    // let jurisdiction_merkle_proof = private_inputs.sanctions_check.jurisdiction_merkle_proof;
+    let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
+    let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
+    let jurisdiction_merkle_proof = private_inputs.sanctions_check.jurisdiction_merkle_proof;
 
     // ----- PRIVATE INPUTS (Others) -----
     let secret = private_inputs.secret;
 
     // 1. Constraint: new invoice commitment (to be refactored)
-    let computed_invoice_commitment = poseidon_hash_4(
-    //let computed_invoice_commitment = poseidon_hash_6(
+    let computed_invoice_commitment = poseidon_hash_6(
         [
             invoice_id,
-            //invoice_supplier_id,
-            //invoice_buyer_id,
+            invoice_supplier_id,
+            invoice_buyer_id,
             invoice_amount,
             invoice_due_date, // maturity_date
             secret
@@ -132,7 +129,7 @@ pub fn main(
     assert(invoice_commitment == computed_invoice_commitment, "invalid invoice commitment");
 
     // 2. Add a new invoice commitment to the invoice commitment Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
-    // 2. Constraint: a Merkle Root of the invoice commitment Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
+    // @dev - Constraint: a Merkle Root of the invoice commitment Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
     let computed_invoice_merkle_root = binary_merkle_root(
         poseidon_hash_2,
         invoice_commitment,
@@ -169,13 +166,7 @@ pub fn main(
     //     jurisdiction_merkle_proof
     // ));
 
-
-    // @dev - This could be checked on-chain. Thus, this step 6 may not be necessary in this Noir ZK circuit
-    // @dev - On the other hand, the "Merkle Inclusion" check can be done here in this Noir ZK circuit
-    //
     // 8. Prevent double factoring
-    // assert(is_nullifier_unused(nullifier));
-
     // @dev - Check the nullifier computation
     let computed_nullifier = poseidon_hash_3([invoice_commitment, invoice_merkle_root, secret]);
     assert(nullifier == computed_nullifier, "invalid nullifier");
@@ -187,29 +178,3 @@ pub fn main(
     // @dev - Return a new nullifier hash and a new invoice commitment (merkle tree's) merkle root
     (invoice_merkle_root, nullifier_hash)
 }
-
-
-
-/**
- * @notice - Merkle inclusion verification function using Merkle Root and Merkle Tree
- */
-// fn is_nullifier_unused(nullifier: Field) -> bool {
-//     let nullifier_hash = poseidon_hash_1([nullifier]);
-
-//     // [TODO]: Check the Merkle inclusion verification function using Merkle Root and Merkle Tree
-//     let is_merkle_included = true;
-//     is_merkle_included
-// }
-
-
-/**
- * @notice - Verify the Buyer's acceptance of the invoice on Supplier's ERP system via zkTLS protocol
- * @dev - This function is a placeholder for the actual implementation of zkTLS verification
- */
-// fn verify_invoice_acceptance_on_supplier_erp(
-//     zk_tls_proof_public_inputs: Field,
-//     buyer_domain_hash: Field,
-//     invoice_buyer_signature: [Field; 2]
-// ) {
-//     // TODO: Implement the verification logic using signature verification
-// }

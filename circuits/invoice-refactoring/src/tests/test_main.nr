@@ -3,7 +3,7 @@ use crate::{
     Invoice, 
     BuyerSolvency, 
     MerkleProofParameters, 
-    //SanctionsCheck, 
+    SanctionsCheck, 
     PrivateInputs, 
     libs::poseidon::{
         poseidon_hash_1, 
@@ -20,58 +20,14 @@ use crate::{
         public_inputs::PublicInputs
     },
 
+    // @dev - The length of the Merkle proof for invoice commitments
+    MERKLE_PROOF_LENGTH,
+
     // @dev - The depth of the Merkle Tree for invoice commitments
     MERKLE_TREE_DEPTH
 };
 
 use binary_merkle_root::binary_merkle_root;
-
-
-
-// // @dev - The Invoice struct, which store the invoice details
-// // @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the API of "Invoicing service" or "ERP systems" via zkTLS protocol.
-// struct Invoice {
-//     invoice_commitment: Field,
-//     invoice_id: Field,
-//     invoice_supplier_id: Field,
-//     invoice_buyer_id: Field,
-//     invoice_amount: Field,
-//     invoice_due_date: Field,
-//     invoice_acceptance_timestamp: Field,
-//     //invoice_buyer_domain_hash: Field,
-//     //invoice_buyer_pubkey: [Field; 2],
-//     //invoice_buyer_signature: [Field; 2]
-// }
-
-// // @dev - The BuyerSolvency struct, which store the buyer's solvency details
-// struct BuyerSolvency {
-//     buyer_credit_score: Field
-// }
-
-// // @dev - The MerkleProofParameters struct, which store the merkle proof parameter of invoice commitment merkle proof in the invoice commitments merkle tree.
-// struct MerkleProofParameters {
-//     merkle_proof_length: u32,
-//     merkle_proof_indices: [u1; 16],
-//     merkle_proof_siblings: [Field; 16]
-// }
-
-// // @dev - The SanctionsCheck struct, which store the sanctions check details
-// struct SanctionsCheck {
-//     jurisdiction_code: Field,
-//     allowed_jurisdiction_root: Field,
-//     jurisdiction_merkle_proof: [Field; 32],
-// }
-
-// // @dev - The PrivateInputs struct, which store the private inputs for the ZK circuit
-// struct PrivateInputs {
-//     invoice: Invoice,
-//     buyer_solvency: BuyerSolvency,
-//     merkle_proof_parameters: MerkleProofParameters,
-//     sanctions_check: SanctionsCheck,
-//     secret: Field      // @dev - Salt to prevent pre-image attacks on commitment
-// }
-
-
 
 /**
  * @dev - Test for the main function to be successful.
@@ -93,13 +49,12 @@ fn test_main_success() {
     // ----- PRIVATE INPUTS (Others) -----
     let secret = 0x987654321fedcba;
     
-    // Compute the invoice commitment first
-    let invoice_commitment = poseidon_hash_4(
-    //let invoice_commitment = poseidon_hash_6(
+    // Compute the invoice commitment first (matching main.nr - using poseidon_hash_6)
+    let invoice_commitment = poseidon_hash_6(
         [
             invoice_id,
-            //invoice_supplier_id,
-            //invoice_buyer_id,
+            invoice_supplier_id,
+            invoice_buyer_id,
             invoice_amount,
             invoice_due_date,
             secret
@@ -110,11 +65,11 @@ fn test_main_success() {
     let buyer_credit_score = 750;
     
     // ----- PRIVATE INPUTS (Merkle proof parameters of invoices) -----
-    let invoice_merkle_proof_length = 4;
-    let invoice_merkle_proof_indices: [u1; MERKLE_TREE_DEPTH] = [0, 1, 0, 1, 0, 0, 0, 0];
+    let invoice_merkle_proof_length = MERKLE_PROOF_LENGTH;
+    let invoice_merkle_proof_indices: [u1; MERKLE_TREE_DEPTH] = [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let invoice_merkle_proof_siblings: [Field; MERKLE_TREE_DEPTH] = [
-        0x111, 0x222, 0x333, 0x444,
-        0, 0, 0, 0
+        0x111, 0x222, 0x333, 0x444, 0, 0, 0, 0,
+        0x111, 0x222, 0x333, 0x444, 0, 0, 0, 0
     ];
     
     // Compute the merkle root from the commitment and proof
@@ -134,14 +89,14 @@ fn test_main_success() {
     let nullifier_hash = poseidon_hash_1([nullifier]);
     
     // ----- PRIVATE INPUTS (Sanctions Check) -----
-    // let jurisdiction_code = 840; // USA country code
-    // let allowed_jurisdiction_root = 0x999888777666;
-    // let jurisdiction_merkle_proof: [Field; 32] = [
-    //     0x101, 0x202, 0x303, 0x404,
-    //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    //     0, 0, 0, 0
-    // ];
+    let jurisdiction_code = 840; // USA country code
+    let allowed_jurisdiction_root = 0x999888777666;
+    let jurisdiction_merkle_proof: [Field; 32] = [
+        0x101, 0x202, 0x303, 0x404,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0
+    ];
 
     // @dev - Construct PublicInputs and PrivateInputs struct data
     let public_inputs = PublicInputs {
@@ -168,12 +123,12 @@ fn test_main_success() {
             invoice_merkle_proof_indices,
             invoice_merkle_proof_siblings
         },
+        sanctions_check: SanctionsCheck {
+            jurisdiction_code,
+            allowed_jurisdiction_root,
+            jurisdiction_merkle_proof
+        },
         nullifier,
-        // sanctions_check: SanctionsCheck {
-        //     jurisdiction_code,
-        //     allowed_jurisdiction_root,
-        //     jurisdiction_merkle_proof
-        // },
         secret
     };
 
@@ -181,9 +136,11 @@ fn test_main_success() {
     let (invoice_merkle_root, nullifier_hash) = main(public_inputs, private_inputs);
 
     // @dev - Check Constraint: the invoice commitment (hash)
-    let computed_invoice_commitment = poseidon_hash_4(
+    let computed_invoice_commitment = poseidon_hash_6(
         [
             invoice_id,
+            invoice_supplier_id,
+            invoice_buyer_id,
             invoice_amount,
             invoice_due_date,
             secret
