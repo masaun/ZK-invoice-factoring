@@ -1,6 +1,10 @@
 use crate::{
     main,
-    Invoice, BuyerSolvency, MerkleProofParameters, SanctionsCheck, PrivateInputs, 
+    Invoice, 
+    BuyerSolvency, 
+    MerkleProofParameters, 
+    //SanctionsCheck, 
+    PrivateInputs, 
     libs::poseidon::{
         poseidon_hash_1, 
         poseidon_hash_2, 
@@ -95,15 +99,16 @@ fn test_main_success() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ];
     let invoice_merkle_root = 0x13d71b7e8100ee6ccb3c0228ada8585e4f8259d7a016191f7cd65342bc517530;
+    
     // ----- PRIVATE INPUTS (Sanctions Check) -----
-    let jurisdiction_code = 840; // USA country code
-    let allowed_jurisdiction_root = 0x999888777666;
-    let jurisdiction_merkle_proof: [Field; 32] = [
-        0x101, 0x202, 0x303, 0x404,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0
-    ];
+    // let jurisdiction_code = 840; // USA country code
+    // let allowed_jurisdiction_root = 0x999888777666;
+    // let jurisdiction_merkle_proof: [Field; 32] = [
+    //     0x101, 0x202, 0x303, 0x404,
+    //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    //     0, 0, 0, 0
+    // ];
 
     // ----- PRIVATE INPUTS (Others) -----
     let secret = 0x987654321fedcba;
@@ -133,11 +138,11 @@ fn test_main_success() {
             invoice_merkle_proof_indices,
             invoice_merkle_proof_siblings
         },
-        sanctions_check: SanctionsCheck {
-            jurisdiction_code,
-            allowed_jurisdiction_root,
-            jurisdiction_merkle_proof
-        },
+        // sanctions_check: SanctionsCheck {
+        //     jurisdiction_code,
+        //     allowed_jurisdiction_root,
+        //     jurisdiction_merkle_proof
+        // },
         secret
     };
 
