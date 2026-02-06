@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { InvoiceRefactoringHonkVerifier } from "./circuits/InvoiceRefactoringHonkVerifier.sol";
-import { Stablecoin } from "./Stablecoin.sol";  // [TODO]: Using IToken.sol as USDC on Arbitrum Sepolia
+import { IToken } from "./interfaces/IToken.sol";
 
 event InvoiceFactored(
     bytes32 indexed invoiceCommitment,
@@ -16,14 +16,14 @@ event InvoiceFactored(
  */
 contract InvoiceFactoring {
     InvoiceRefactoringHonkVerifier public invoiceRefactoringHonkVerifier;
-    Stablecoin public stablecoin;
+    IToken public usdc; // Using IToken.sol as USDC on Arbitrum Sepolia
 
     mapping(bytes32 => bool) public nullifierHashes;
     mapping(bytes32 => address) public factoredInvoiceOwners;
 
-    constructor(HonkVerifier _invoiceRefactoringHonkVerifier, Stablecoin _stablecoin) {
+    constructor(InvoiceRefactoringHonkVerifier _invoiceRefactoringHonkVerifier, IToken _usdc) {
         invoiceRefactoringHonkVerifier = _invoiceRefactoringHonkVerifier;
-        stablecoin = _stablecoin;
+        usdc = _usdc;
     }
 
     /**
@@ -61,7 +61,7 @@ contract InvoiceFactoring {
         factoredInvoiceOwners[invoiceMerkleTreeRoot] = msg.sender; // A owner of a factored-invoice, who is a invoice supplier, would be stored
 
         // 4. Pay an advance amount of fund to the invoice supplier in USDC
-        stablecoin.transfer(invoiceSupplier, advanceAmount);
+        usdc.transfer(invoiceSupplier, advanceAmount);
 
         emit InvoiceFactored(publicInputs[0], invoiceSupplier, advanceAmount);
     }
