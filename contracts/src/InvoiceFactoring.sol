@@ -27,12 +27,7 @@ contract InvoiceFactoring {
     }
 
     /**
-     * @notice - Factor an invoice using a ZK proof 
-     * @param zkProof 
-     * @param invoiceCommitment 
-     * @param nullifier 
-     * @param advanceAmount 
-     * @param supplier 
+     * @notice - Factor a given invoice using a ZK InvoiceRefactoring Proof
      */
     function factorInvoice(
         bytes calldata proof, 
@@ -60,10 +55,19 @@ contract InvoiceFactoring {
         // 3. Record ownership of the factored-invoice
         factoredInvoiceOwners[invoiceMerkleTreeRoot] = msg.sender; // A owner of a factored-invoice, who is a invoice supplier, would be stored
 
-        // 4. Pay an advance amount of fund to the invoice supplier in USDC
+        // 4. Pay an advance amount of funds to the invoice supplier in USDC
         usdc.transfer(invoiceSupplier, advanceAmount);
 
         emit InvoiceFactored(publicInputs[0], invoiceSupplier, advanceAmount);
+    }
+
+    
+    /**
+     * @notice - A factoring company deposit USDC into this contract for paying an advance amount of funds to invoice suppliers
+     */
+    function depositUSDCForFactoringCompany(uint256 amount) external {
+        // @dev - This caller must be a factoring company.
+        usdc.transferFrom(msg.sender, address(this), amount);
     }
 }
 
