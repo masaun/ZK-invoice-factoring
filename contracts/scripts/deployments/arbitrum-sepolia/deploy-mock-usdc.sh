@@ -51,10 +51,16 @@ if [ "$VERIFY_ONLY" = true ]; then
         exit 1
     fi
 
-    # Get address interactively if not provided
+    # Get address from argument, env, or user input
     if [ -z "$MOCK_USDC_ADDRESS" ]; then
-        echo -e "${YELLOW}Enter MockUSDC contract address:${NC}"
-        read MOCK_USDC_ADDRESS
+        # No argument provided, try to use env variable
+        if [ -n "$USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA" ] && [ "$USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA" != "0x0000000000000000000000000000000000000000" ]; then
+            MOCK_USDC_ADDRESS="$USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA"
+        else
+            # Prompt user for address
+            echo -e "${YELLOW}Enter MockUSDC contract address:${NC}"
+            read MOCK_USDC_ADDRESS
+        fi
     fi
 
     echo ""
