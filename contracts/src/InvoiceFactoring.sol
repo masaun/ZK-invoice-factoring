@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { InvoiceRefactoringHonkVerifier } from "./circuits/InvoiceRefactoringHonkVerifier.sol";
-import { Stablecoin } from "./Stablecoin.sol";
+import { Stablecoin } from "./Stablecoin.sol";  // [TODO]: Using IToken.sol as USDC on Arbitrum Sepolia
 
 event InvoiceFactored(
     bytes32 indexed invoiceCommitment,

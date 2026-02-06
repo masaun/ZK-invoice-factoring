@@ -45,9 +45,9 @@ pub struct BuyerSolvency {
 
 // @dev - The MerkleProofParameters struct, which store the merkle proof parameter of invoice commitment merkle proof in the invoice commitments merkle tree.
 pub struct MerkleProofParameters {
-    merkle_proof_length: u32,
-    merkle_proof_indices: [u1; 16],
-    merkle_proof_siblings: [Field; 16]
+    invoice_merkle_proof_length: u32,
+    invoice_merkle_proof_indices: [u1; 16],
+    invoice_merkle_proof_siblings: [Field; 16]
 }
 
 // @dev - The SanctionsCheck struct, which store the sanctions check details
@@ -74,7 +74,7 @@ pub struct PrivateInputs {
 pub fn main(
     public_inputs: PublicInputs,
     private_inputs: PrivateInputs
-) -> pub (Field, Field, Field) {
+) -> pub (Field, Field) {
     // ----- PUBLIC INPUTS -----  
     let nullifier = public_inputs.nullifier;
     let minimum_threshold_of_credit_score = public_inputs.minimum_threshold_of_credit_score;
@@ -96,11 +96,11 @@ pub fn main(
     // ----- PRIVATE INPUTS (Buyer Solvency) -----
     let buyer_credit_score = private_inputs.buyer_solvency.buyer_credit_score;
 
-    // --- Merkle proof parameters of invoices ---
-    let merkle_proof_length = private_inputs.merkle_proof_parameters.merkle_proof_length;
-    let merkle_proof_indices = private_inputs.merkle_proof_parameters.merkle_proof_indices;
-    let merkle_proof_siblings = private_inputs.merkle_proof_parameters.merkle_proof_siblings;
-    let merkle_root = public_inputs.merkle_root;
+    // ----- PRIVATE INPUTS (Merkle proof parameters of the invoice commitment merkle tree) -----
+    let invoice_merkle_proof_length = private_inputs.merkle_proof_parameters.invoice_merkle_proof_length;
+    let invoice_merkle_proof_indices = private_inputs.merkle_proof_parameters.invoice_merkle_proof_indices;
+    let invoice_merkle_proof_siblings = private_inputs.merkle_proof_parameters.invoice_merkle_proof_siblings;
+    let invoice_merkle_root = public_inputs.invoice_merkle_root;
 
     // ----- PRIVATE INPUTS (Sanctions Check) -----
     let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
@@ -125,14 +125,14 @@ pub fn main(
 
     // 2. Add a new invoice commitment to the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
     // 2. Constraint: a Merkle Root of the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
-    let computed_merkle_root = binary_merkle_root(
+    let computed_invoice_merkle_root = binary_merkle_root(
         poseidon_hash_2,
         invoice_commitment,
-        merkle_proof_length,
-        merkle_proof_indices,
-        merkle_proof_siblings,
+        invoice_merkle_proof_length,
+        invoice_merkle_proof_indices,
+        invoice_merkle_proof_siblings,
     );
-    assert(merkle_root == computed_merkle_root, "merkle roots don't match");
+    assert(invoice_merkle_root == computed_invoice_merkle_root, "merkle roots don't match");
 
     // 3. Constraint: Acceptance freshness
     assert(invoice_acceptance_timestamp as u32 < invoice_due_date as u32);
@@ -169,14 +169,14 @@ pub fn main(
     // assert(is_nullifier_unused(nullifier));
 
     // @dev - Check the nullifier computation
-    let computed_nullifier = poseidon_hash_3([invoice_commitment, merkle_root, secret]);
+    let computed_nullifier = poseidon_hash_3([invoice_commitment, invoice_merkle_root, secret]);
     assert(nullifier == computed_nullifier, "invalid nullifier");
 
     // @dev - Compute a nullifier hash, which is stored on-chain, to prevent double factoring
     let nullifier_hash = poseidon_hash_1([nullifier]);
 
-    // @dev - Return the nullifier hash and "new" invoice commitment 
-    (nullifier_hash, invoice_commitment, merkle_root)
+    // @dev - Return a new nullifier hash and a new invoice commitment (merkle tree's) merkle root
+    (invoice_merkle_root, nullifier_hash)
 }
 
 
