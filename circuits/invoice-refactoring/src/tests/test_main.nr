@@ -79,17 +79,32 @@ use binary_merkle_root::binary_merkle_root;
 #[test]
 fn test_main_success() {
     // ----- PUBLIC INPUTS -----  
-    let nullifier = 0x1c453851a1197c5c17418a6fc27c15e1c857c39abd37bf4b4fbf2396d50111ad;
+    let nullifier_hash = 0x1c453851a1197c5c17418a6fc27c15e1c857c39abd37bf4b4fbf2396d50111ad;
     let minimum_threshold_of_credit_score = 700;
 
     // ----- PRIVATE INPUTS (Invoice) -----
-    let invoice_commitment = 0x1c1d5e7bf24c9c1a4f54ec2a282509e12cdc731c450db688693a4e0fe9617786;
     let invoice_id = 1001;
     let invoice_supplier_id = 5001;
     let invoice_buyer_id = 6001;
     let invoice_amount = 50000;
     let invoice_due_date = 1735689600; // Unix timestamp: Jan 1, 2025
     let invoice_acceptance_timestamp = 1704067200; // Unix timestamp: Jan 1, 2024
+    
+    // ----- PRIVATE INPUTS (Others) -----
+    let secret = 0x987654321fedcba;
+    
+    // Compute the invoice commitment first
+    let invoice_commitment = poseidon_hash_4(
+    //let invoice_commitment = poseidon_hash_6(
+        [
+            invoice_id,
+            //invoice_supplier_id,
+            //invoice_buyer_id,
+            invoice_amount,
+            invoice_due_date,
+            secret
+        ]
+    );
 
     // ----- PRIVATE INPUTS (Buyer Solvency) -----
     let buyer_credit_score = 750;
@@ -101,7 +116,22 @@ fn test_main_success() {
         0x111, 0x222, 0x333, 0x444,
         0, 0, 0, 0
     ];
-    let invoice_merkle_root = 0x13d71b7e8100ee6ccb3c0228ada8585e4f8259d7a016191f7cd65342bc517530;
+    
+    // Compute the merkle root from the commitment and proof
+    let invoice_merkle_root = binary_merkle_root(
+        poseidon_hash_2,
+        invoice_commitment,
+        invoice_merkle_proof_length,
+        invoice_merkle_proof_indices,
+        invoice_merkle_proof_siblings,
+    );
+
+    // ----- PRIVATE INPUTS (Raw Nullifier) -----
+    // Compute the nullifier from commitment, merkle root, and secret
+    let nullifier = poseidon_hash_3([invoice_commitment, invoice_merkle_root, secret]);
+    
+    // Compute the nullifier hash for public inputs
+    let nullifier_hash = poseidon_hash_1([nullifier]);
     
     // ----- PRIVATE INPUTS (Sanctions Check) -----
     // let jurisdiction_code = 840; // USA country code
@@ -113,12 +143,9 @@ fn test_main_success() {
     //     0, 0, 0, 0
     // ];
 
-    // ----- PRIVATE INPUTS (Others) -----
-    let secret = 0x987654321fedcba;
-
     // @dev - Construct PublicInputs and PrivateInputs struct data
     let public_inputs = PublicInputs {
-        nullifier,
+        nullifier_hash,
         minimum_threshold_of_credit_score,
         invoice_merkle_root
     };
@@ -141,6 +168,7 @@ fn test_main_success() {
             invoice_merkle_proof_indices,
             invoice_merkle_proof_siblings
         },
+        nullifier,
         // sanctions_check: SanctionsCheck {
         //     jurisdiction_code,
         //     allowed_jurisdiction_root,
@@ -153,11 +181,9 @@ fn test_main_success() {
     let (invoice_merkle_root, nullifier_hash) = main(public_inputs, private_inputs);
 
     // @dev - Check Constraint: the invoice commitment (hash)
-    let computed_invoice_commitment = poseidon_hash_6(
+    let computed_invoice_commitment = poseidon_hash_4(
         [
             invoice_id,
-            invoice_supplier_id,
-            invoice_buyer_id,
             invoice_amount,
             invoice_due_date,
             secret

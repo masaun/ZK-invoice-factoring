@@ -4,6 +4,6 @@
 // @dev - "invoice_merkle_root": The Merkle Root of the invoice commitments merkle tree
 pub struct PublicInputs {
     pub minimum_threshold_of_credit_score: Field,
-    pub nullifier: Field,
+    pub nullifier_hash: Field,  // @dev - Hash of the raw nullifier to prevent double factoring
     pub invoice_merkle_root: Field
 }

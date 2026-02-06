@@ -65,6 +65,7 @@ pub struct PrivateInputs {
     invoice: Invoice,
     buyer_solvency: BuyerSolvency,
     merkle_proof_parameters: MerkleProofParameters,
+    nullifier: Field,  // @dev - Raw nullifier to prevent double factoring
     //sanctions_check: SanctionsCheck,
     secret: Field      // @dev - Salt to prevent pre-image attacks on commitment
 }
@@ -79,7 +80,7 @@ pub fn main(
     private_inputs: PrivateInputs
 ) -> pub (Field, Field) {
     // ----- PUBLIC INPUTS -----  
-    let nullifier = public_inputs.nullifier;
+    let nullifier_hash = public_inputs.nullifier_hash;
     let minimum_threshold_of_credit_score = public_inputs.minimum_threshold_of_credit_score;
 
     // ----- PRIVATE INPUTS (Invoice) -----
@@ -105,6 +106,9 @@ pub fn main(
     let invoice_merkle_proof_siblings = private_inputs.merkle_proof_parameters.invoice_merkle_proof_siblings;
     let invoice_merkle_root = public_inputs.invoice_merkle_root;
 
+    // ----- PRIVATE INPUTS (Raw Nullifier) -----
+    let nullifier = private_inputs.nullifier;
+
     // ----- PRIVATE INPUTS (Sanctions Check) -----
     // let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
     // let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
@@ -114,11 +118,12 @@ pub fn main(
     let secret = private_inputs.secret;
 
     // 1. Constraint: new invoice commitment (to be refactored)
-    let computed_invoice_commitment = poseidon_hash_6(
+    let computed_invoice_commitment = poseidon_hash_4(
+    //let computed_invoice_commitment = poseidon_hash_6(
         [
             invoice_id,
-            invoice_supplier_id,
-            invoice_buyer_id,
+            //invoice_supplier_id,
+            //invoice_buyer_id,
             invoice_amount,
             invoice_due_date, // maturity_date
             secret
@@ -176,7 +181,8 @@ pub fn main(
     assert(nullifier == computed_nullifier, "invalid nullifier");
 
     // @dev - Compute a nullifier hash, which is stored on-chain, to prevent double factoring
-    let nullifier_hash = poseidon_hash_1([nullifier]);
+    let computed_nullifier_hash = poseidon_hash_1([nullifier]);
+    assert(nullifier_hash == computed_nullifier_hash, "invalid nullifier");
 
     // @dev - Return a new nullifier hash and a new invoice commitment (merkle tree's) merkle root
     (invoice_merkle_root, nullifier_hash)
