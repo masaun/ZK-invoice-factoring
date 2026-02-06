@@ -51,18 +51,18 @@ pub struct MerkleProofParameters {
 }
 
 // @dev - The SanctionsCheck struct, which store the sanctions check details
-pub struct SanctionsCheck {
-    jurisdiction_code: Field,
-    allowed_jurisdiction_root: Field,
-    jurisdiction_merkle_proof: [Field; 32],
-}
+// pub struct SanctionsCheck {
+//     jurisdiction_code: Field,
+//     allowed_jurisdiction_root: Field,
+//     jurisdiction_merkle_proof: [Field; 32],
+// }
 
 // @dev - The PrivateInputs struct, which store the private inputs for the ZK circuit
 pub struct PrivateInputs {
     invoice: Invoice,
     buyer_solvency: BuyerSolvency,
     merkle_proof_parameters: MerkleProofParameters,
-    sanctions_check: SanctionsCheck,
+    //sanctions_check: SanctionsCheck,
     secret: Field      // @dev - Salt to prevent pre-image attacks on commitment
 }
 
@@ -103,9 +103,9 @@ pub fn main(
     let invoice_merkle_root = public_inputs.invoice_merkle_root;
 
     // ----- PRIVATE INPUTS (Sanctions Check) -----
-    let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
-    let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
-    let jurisdiction_merkle_proof = private_inputs.sanctions_check.jurisdiction_merkle_proof;
+    // let jurisdiction_code = private_inputs.sanctions_check.jurisdiction_code;
+    // let allowed_jurisdiction_root = private_inputs.sanctions_check.allowed_jurisdiction_root;
+    // let jurisdiction_merkle_proof = private_inputs.sanctions_check.jurisdiction_merkle_proof;
 
     // ----- PRIVATE INPUTS (Others) -----
     let secret = private_inputs.secret;
