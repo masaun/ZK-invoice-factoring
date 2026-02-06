@@ -18,8 +18,8 @@ contract InvoiceFactoring {
     InvoiceRefactoringHonkVerifier public invoiceRefactoringHonkVerifier;
     Stablecoin public stablecoin;
 
-    mapping(bytes32 => bool) public usedNullifiers;
-    mapping(bytes32 => address) public invoiceOwner;
+    mapping(bytes32 => bool) public nullifierHashes;
+    mapping(bytes32 => address) public factoredInvoiceOwners;
 
     constructor(HonkVerifier _invoiceRefactoringHonkVerifier, Stablecoin _stablecoin) {
         invoiceRefactoringHonkVerifier = _invoiceRefactoringHonkVerifier;
@@ -37,9 +37,8 @@ contract InvoiceFactoring {
     function factorInvoice(
         bytes calldata proof, 
         bytes32[] calldata publicInputs,
-        bytes32 nullifier,
         uint256 advanceAmount,
-        address supplier
+        address invoiceSupplier
     ) external {
         // 1. Verify a InvoiceRefactoringProof
         require(
@@ -47,17 +46,24 @@ contract InvoiceFactoring {
             "Invalid ZK proof"
         );
 
-        // 2. Lock invoice
-        require(!usedNullifiers[nullifier], "Already factored");
-        usedNullifiers[nullifier] = true;
+        // @dev - Construct variables from public inputs
+        bytes32 invoiceMerkleTreeRoot = publicInputs[0];
+        bytes32 nullifierHash = publicInputs[1]; // @dev - A nullifier hash of a factored-invoice
 
-        // 3. Record ownership
-        invoiceOwner[publicInputs[0]] = msg.sender; // Factor
+        // 2. Prevent double factoring using nullifier hash
+        // @dev - Revert if the nullifier hash has already been used
+        require(!nullifierHashes[nullifierHash], "A given invoice has already been factored");
 
-        // 4. Pay supplier
-        stablecoin.transfer(supplier, advanceAmount);
+        // @dev - If there is no previous usage, the nullifier hash is marked as "used". This means the invoice is marked as "factored"
+        nullifierHashes[nullifierHash] = true;
 
-        emit InvoiceFactored(publicInputs[0], supplier, advanceAmount);
+        // 3. Record ownership of the factored-invoice
+        factoredInvoiceOwners[invoiceMerkleTreeRoot] = msg.sender; // A owner of a factored-invoice, who is a invoice supplier, would be stored
+
+        // 4. Pay an advance amount of fund to the invoice supplier in USDC
+        stablecoin.transfer(invoiceSupplier, advanceAmount);
+
+        emit InvoiceFactored(publicInputs[0], invoiceSupplier, advanceAmount);
     }
 }
 

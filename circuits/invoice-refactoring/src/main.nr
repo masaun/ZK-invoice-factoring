@@ -123,8 +123,8 @@ pub fn main(
     );
     assert(invoice_commitment == computed_invoice_commitment, "invalid invoice commitment");
 
-    // 2. Add a new invoice commitment to the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
-    // 2. Constraint: a Merkle Root of the invoice commitments Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
+    // 2. Add a new invoice commitment to the invoice commitment Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
+    // 2. Constraint: a Merkle Root of the invoice commitment Merkele Tree (= Refactored-Invoice Commitments Merkle Tree)
     let computed_invoice_merkle_root = binary_merkle_root(
         poseidon_hash_2,
         invoice_commitment,
