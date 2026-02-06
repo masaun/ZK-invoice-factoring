@@ -18,7 +18,10 @@ use crate::{
     types::{
         //invoice::Invoice,
         public_inputs::PublicInputs
-    }
+    },
+
+    // @dev - The depth of the Merkle Tree for invoice commitments
+    MERKLE_TREE_DEPTH
 };
 
 use binary_merkle_root::binary_merkle_root;
@@ -93,10 +96,10 @@ fn test_main_success() {
     
     // ----- PRIVATE INPUTS (Merkle proof parameters of invoices) -----
     let invoice_merkle_proof_length = 4;
-    let invoice_merkle_proof_indices: [u1; 16] = [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    let invoice_merkle_proof_siblings: [Field; 16] = [
+    let invoice_merkle_proof_indices: [u1; MERKLE_TREE_DEPTH] = [0, 1, 0, 1, 0, 0, 0, 0];
+    let invoice_merkle_proof_siblings: [Field; MERKLE_TREE_DEPTH] = [
         0x111, 0x222, 0x333, 0x444,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        0, 0, 0, 0
     ];
     let invoice_merkle_root = 0x13d71b7e8100ee6ccb3c0228ada8585e4f8259d7a016191f7cd65342bc517530;
     

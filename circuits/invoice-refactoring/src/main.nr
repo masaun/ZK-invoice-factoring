@@ -22,6 +22,9 @@ use types::{
     public_inputs::PublicInputs
 };
 
+// @dev - The depth of the Merkle Tree for invoice commitments
+pub global MERKLE_TREE_DEPTH: u32 = 8;
+//pub global MERKLE_TREE_DEPTH: u32 = 16;
 
 // @dev - The Invoice struct, which store the invoice details
 // @dev - "invoice_id": a unique identifier for the invoice, which is retrieved from the API of "Invoicing service" or "ERP systems" via zkTLS protocol.
@@ -46,8 +49,8 @@ pub struct BuyerSolvency {
 // @dev - The MerkleProofParameters struct, which store the merkle proof parameter of invoice commitment merkle proof in the invoice commitments merkle tree.
 pub struct MerkleProofParameters {
     invoice_merkle_proof_length: u32,
-    invoice_merkle_proof_indices: [u1; 16],
-    invoice_merkle_proof_siblings: [Field; 16]
+    invoice_merkle_proof_indices: [u1; MERKLE_TREE_DEPTH],
+    invoice_merkle_proof_siblings: [Field; MERKLE_TREE_DEPTH]
 }
 
 // @dev - The SanctionsCheck struct, which store the sanctions check details
