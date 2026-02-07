@@ -277,7 +277,7 @@ const main = async () => {
   if (dataProtectorCore) {
     try {
       console.log("  - Encrypting invoice data in TEE...");
-      console.log("  - Attempting with Arweave upload mode (alternative to IPFS)...");
+      console.log("  - Attempting to upload to IPFS...");
       
       // Use simpler data structure to avoid IPFS upload issues
       // All values must be: boolean, number, bigint, string, or binary (Uint8Array/ArrayBuffer/File)
