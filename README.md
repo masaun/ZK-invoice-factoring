@@ -2,7 +2,7 @@
 
 ## Overview
 
-ZK Invoice Refactoring is a privacy-preserving invoice factoring platform that leverages zero-knowledge proofs to enable **suppliers** to access liquidity *without* `exposing sensitive business data` and `deposting any collateral`.
+ZK Invoice Refactoring is a privacy-preserving invoice factoring platform that leverages `zero-knowledge proof` to enable **suppliers** to access liquidity *without* `exposing sensitive business data` and `deposting any collateral`.
 
 The system allows **suppliers** to prove that their invoices have been accepted by **buyers** without revealing confidential information to the **factoring company** such as invoice amounts, payment terms, or buyer identities.
 
@@ -118,6 +118,16 @@ Buyer ────────────────────────�
 Buyer ─────────────────────────────▶ Factor (SPV / Vault)
 ```
 
+<br>
+
+## Deployed Contract Addresses (on `Arbitrum Sepolia`)
+
+| Contract Name | Address | Network | Explorer |
+|--------------|---------|---------|----------|
+| HonkVerifier | `0x00ED53B614f877b08a3611138e52dF6a47415572` | Arbitrum Sepolia | [View on Explorer](https://sepolia.arbiscan.io/address/0x00ED53B614f877b08a3611138e52dF6a47415572) |
+| InvoiceRefactoringHonkVerifier | `0xE87206330Fa28E7d75D5C910B9D88286D9267839` | Arbitrum Sepolia | [View on Explorer](https://sepolia.arbiscan.io/address/0xE87206330Fa28E7d75D5C910B9D88286D9267839) |
+| InvoiceFactoring | `0x86Dea1F4E3f86ccE7EeE32e6AD4bca66F3879f8D` | Arbitrum Sepolia | [View on Explorer](https://sepolia.arbiscan.io/address/0x86Dea1F4E3f86ccE7EeE32e6AD4bca66F3879f8D) |
+| MockUSDC | `0x2d159141C3Badf038216E59089D0151CB2692dCc` | Arbitrum Sepolia | [View on Explorer](https://sepolia.arbiscan.io/address/0x2d159141C3Badf038216E59089D0151CB2692dCc) |
 
 <br>
 
@@ -148,6 +158,32 @@ cd circuits/invoice-refactoring
 sh build.sh
 ```
 
+<br>
+
+### Smart Contract
+
+1. **Install dependencies**:
+```bash
+cd contracts
+forge install
+```
+
+2. **Compile contracts**:
+```bash
+forge build
+```
+
+3. **Run tests**:
+```bash
+forge test
+```
+
+4. **Deploy on Arbitrum Sepolia**:
+```bash
+cd contracts/scripts/deployments/arbitrum-sepolia
+
+sh deploy.sh
+```
 
 <br>
 
