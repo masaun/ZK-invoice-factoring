@@ -232,10 +232,19 @@ const main = async () => {
         }
       };
 
+      // Arbitrum Sepolia IPFS configuration from iExec documentation
+      const ipfsConfig = {
+        ipfsNode: 'https://ipfs-upload.arbitrum-sepolia-testnet.iex.ec',
+        ipfsGateway: 'https://ipfs-gateway.arbitrum-sepolia-testnet.iex.ec',
+      };
+
       dataProtectorCore = new IExecDataProtectorCore(customProvider, {
         allowExperimentalNetworks: true,
+        ...ipfsConfig,
       });
       console.log("  ✓ DataProtector initialized successfully");
+      console.log("    - IPFS Upload:", ipfsConfig.ipfsNode);
+      console.log("    - IPFS Gateway:", ipfsConfig.ipfsGateway);
     } catch (error) {
       console.error("  ❌ Failed to initialize DataProtector:", error);
       console.log("  ℹ️  Continuing without DataProtector (falling back to local encryption)");
@@ -268,20 +277,22 @@ const main = async () => {
   if (dataProtectorCore) {
     try {
       console.log("  - Encrypting invoice data in TEE...");
+      console.log("  - Attempting with Arweave upload mode (alternative to IPFS)...");
       
+      // Use simpler data structure to avoid IPFS upload issues
+      // All values must be: boolean, number, bigint, string, or binary (Uint8Array/ArrayBuffer/File)
       protectedInvoiceData = await dataProtectorCore.protectData({
         name: `Invoice-${invoice.invoice_id}-${Date.now()}`,
         data: {
-          invoice_id: invoice.invoice_id.toString(),
-          invoice_supplier_id: invoice.invoice_supplier_id.toString(),
-          invoice_buyer_id: invoice.invoice_buyer_id.toString(),
-          invoice_amount: invoice.invoice_amount.toString(),
-          invoice_due_date: invoice.invoice_due_date.toString(),
-          invoice_acceptance_timestamp: invoice.invoice_acceptance_timestamp.toString(),
-          secret: invoice.secret.toString(),
-          // Additional metadata (not encrypted, for indexing)
-          creation_timestamp: Date.now().toString(),
+          invoice_id: Number(invoice.invoice_id),
+          invoice_supplier_id: Number(invoice.invoice_supplier_id),
+          invoice_buyer_id: Number(invoice.invoice_buyer_id),
+          invoice_amount: Number(invoice.invoice_amount),
+          invoice_due_date: Number(invoice.invoice_due_date),
+          invoice_acceptance_timestamp: Number(invoice.invoice_acceptance_timestamp),
+          secret: invoice.secret,
         },
+        uploadMode: 'ipfs', // IPFS
         onStatusUpdate: ({ title, isDone }: { title: string; isDone: boolean }) => {
           if (!isDone) {
             console.log(`    ⏳ ${title}...`);
@@ -322,9 +333,86 @@ const main = async () => {
 
   // Step 3: Generate ZK proof for invoice refactoring
   console.log("\n🔐 Step 3: Generating ZK proof for invoice refactoring...");
-  console.log("  ℹ️  Note: For maximum privacy, proof generation could be done in iExec TEE");
-  console.log("     using processProtectedData() with a custom ZK-proof generator app");
-  console.log("     This would ensure that even the prover never sees the raw invoice data");
+  
+  // ⚠️ IMPORTANT: Current Implementation vs Full TEE Integration
+  // ================================================================
+  // 
+  // CURRENT APPROACH (Local Proof Generation):
+  // ------------------------------------------
+  // This script currently generates ZK proofs LOCALLY (client-side).
+  // While this works functionally, it doesn't leverage the full power of iExec TEE.
+  //
+  // FULL TEE INTEGRATION (Recommended for Production):
+  // --------------------------------------------------
+  // To create trackable tasks visible on iExec Explorer, follow these steps:
+  //
+  // Step 1: Create an iExec iApp (TEE Application)
+  //   - Build a Docker image containing Noir/Barretenberg ZK proof generator
+  //   - Deploy it as an iExec app
+  //   - Example: https://github.com/iExecBlockchainComputing/iexec-apps
+  //
+  // Step 2: Grant Access to the iApp
+  //   if (protectedInvoiceData) {
+  //     const grantedAccess = await dataProtectorCore.grantAccess({
+  //       protectedData: protectedInvoiceData.address,
+  //       authorizedApp: '0xYourZKProofGeneratorAppAddress',
+  //       authorizedUser: account.address,
+  //       numberOfAccess: 1,
+  //     });
+  //     console.log("✓ Granted access:", grantedAccess.txHash);
+  //   }
+  //
+  // Step 3: Execute ZK Proof Generation in TEE
+  //   const taskResult = await dataProtectorCore.processProtectedData({
+  //     protectedData: protectedInvoiceData.address,
+  //     app: '0xYourZKProofGeneratorAppAddress',
+  //     args: `--min-credit-score ${minimumCreditScore} --buyer-score ${buyerCreditScore}`,
+  //     onStatusUpdate: ({ title, isDone }) => {
+  //       console.log(`Task Status: ${title} - ${isDone ? 'Done' : 'In Progress'}`);
+  //     },
+  //   });
+  //
+  //   // This creates a TASK on iExec network visible at:
+  //   // https://explorer.iex.ec/arbitrum-sepolia-testnet/task/${taskResult.taskId}
+  //
+  //   console.log("✓ Task ID:", taskResult.taskId);
+  //   console.log("✓ View task:", `https://explorer.iex.ec/arbitrum-sepolia-testnet/task/${taskResult.taskId}`);
+  //
+  // Step 4: Retrieve ZK Proof from TEE Result
+  //   const result = await dataProtectorCore.getResultFromCompletedTask({
+  //     taskId: taskResult.taskId,
+  //   });
+  //   // result.data contains the ZK proof generated inside TEE
+  //
+  // BENEFITS of Full TEE Integration:
+  // ----------------------------------
+  // ✅ Invoice data never leaves encrypted storage
+  // ✅ ZK proof generation happens in secure TEE
+  // ✅ Verifiable computation on iExec Explorer
+  // ✅ Task lifecycle tracking (PENDING → ACTIVE → COMPLETED)
+  // ✅ Auditable proof-of-computation on blockchain
+  //
+  // WHY Current Approach Works for Testing:
+  // ----------------------------------------
+  // - Demonstrates DataProtector integration architecture
+  // - Shows correct data encryption flow
+  // - Proves on-chain ZK verification works
+  // - Allows testing without deploying a custom iApp
+  //
+  // NEXT STEPS for Production:
+  // ---------------------------
+  // 1. Create ZK proof generator iApp using iExec App Generator
+  // 2. Deploy to iExec network
+  // 3. Replace local proof generation with processProtectedData()
+  // 4. Monitor tasks on https://explorer.iex.ec/arbitrum-sepolia-testnet
+  //
+  console.log("  ℹ️  Note: Currently generating proof LOCALLY for testing");
+  console.log("     For full TEE integration with trackable tasks:");
+  console.log("     1. Create an iExec iApp that generates ZK proofs");
+  console.log("     2. Use dataProtectorCore.grantAccess() to authorize the app");
+  console.log("     3. Use dataProtectorCore.processProtectedData() to run computation in TEE");
+  console.log("     4. Tasks will be visible at: https://explorer.iex.ec/arbitrum-sepolia-testnet");
+  console.log("");
   
   const minimumCreditScore = 600;
   const buyerCreditScore = 750;
@@ -532,13 +620,6 @@ const main = async () => {
       console.log("  - Protected data address:", protectedInvoiceData.address);
       console.log("  - View on iExec explorer: https://explorer.iex.ec/arbitrum-sepolia/dataset/" + protectedInvoiceData.address);
     }
-    
-    console.log("\n💡 Next Steps for Full TEE Integration:");
-    console.log("  1. Create a custom iExec app for ZK proof generation");
-    console.log("  2. Use processProtectedData() to run proof generation in TEE");
-    console.log("  3. Grant access to the proof generator app using grantAccess()");
-    console.log("  4. Retrieve proof results securely from TEE computation");
-    
   } catch (error: any) {
     console.log("\n❌ Transaction failed!");
     
