@@ -4,12 +4,6 @@ pragma solidity ^0.8.28;
 import { InvoiceRefactoringHonkVerifier } from "./circuits/InvoiceRefactoringHonkVerifier.sol";
 import { IToken } from "./interfaces/IToken.sol";
 
-event InvoiceFactored(
-    bytes32 indexed invoiceCommitment,
-    address indexed supplier,
-    uint256 advanceAmount
-);
-
 /**
  * @title 
  * @notice - ZK InvoiceRefactoring Proof-triggered loan against an invoice
@@ -21,9 +15,16 @@ contract InvoiceFactoring {
     InvoiceRefactoringHonkVerifier public invoiceRefactoringHonkVerifier;
     IToken public usdc; // Using IToken.sol as USDC on Arbitrum Sepolia
     address public factoringCompany;
+    //uint256 MINIMUM_THRESHOLD_OF_CREDIT_SCORE; // Minimum credit score threshold of a "Buyer" to check solvency for factoring eligibility
 
     mapping(bytes32 => bool) public nullifierHashes;
     mapping(bytes32 => address) public factoredInvoiceOwners;
+
+    event InvoiceFactored(
+        bytes32 indexed invoiceCommitment,
+        address indexed supplier,
+        uint256 advanceAmount
+    );
 
     constructor(InvoiceRefactoringHonkVerifier _invoiceRefactoringHonkVerifier, IToken _usdc) {
         invoiceRefactoringHonkVerifier = _invoiceRefactoringHonkVerifier;
@@ -92,6 +93,17 @@ contract InvoiceFactoring {
         require(msg.sender == factoringCompany, "Only the factoring company can call this function");
         usdc.transferFrom(address(this), msg.sender, amount);
     }
+
+    // @dev - Minimum threshold of credit score for factoring eligibility
+    // function updateMinimumThresholdOfCreditScore(uint256 _minimumThresholdOfCreditScore) external {
+    //     require(msg.sender == factoringCompany, "Only the factoring company can set the minimum threshold of credit score");
+    //     MINIMUM_THRESHOLD_OF_CREDIT_SCORE = _minimumThresholdOfCreditScore;
+    // }
+
+    // @dev - Get the minimum threshold of credit score
+    // function getMinimumThresholdOfCreditScore() external view returns (uint256) {
+    //     return MINIMUM_THRESHOLD_OF_CREDIT_SCORE;
+    // }
 }
 
 

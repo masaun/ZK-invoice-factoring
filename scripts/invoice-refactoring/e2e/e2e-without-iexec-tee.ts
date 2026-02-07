@@ -204,16 +204,15 @@ const main = async () => {
   console.log("  ✓ ZK proof generated successfully!");
   console.log("  - Proof size:", proof.length, "bytes");
   console.log("  - Public inputs from circuit:", publicInputs);
-  console.log("    - [0] minimum_threshold_of_credit_score:", publicInputs[0]);
+  console.log("    - [0] invoice_merkle_root:", publicInputs[0]);
   console.log("    - [1] nullifier_hash:", publicInputs[1]);
-  console.log("    - [2] invoice_merkle_root:", publicInputs[2]);
 
   // Convert proof to hex string
   const proofHex = `0x${Buffer.from(proof).toString('hex')}` as `0x${string}`;
   
   // Convert public inputs to bytes32 array
-  // Circuit returns: [minimum_threshold_of_credit_score, nullifier_hash, invoice_merkle_root]
-  // ALL public inputs must be passed to the verifier contract
+  // Circuit returns: [invoice_merkle_root, nullifier_hash]
+  // Contract expects: [invoice_merkle_root, nullifier_hash]
   const publicInputsBytes32 = publicInputs.map((input: string) => {
     // Ensure the input is a 32-byte hex string
     const hex = BigInt(input).toString(16).padStart(64, '0');
@@ -223,9 +222,8 @@ const main = async () => {
   console.log("  ✓ Proof formatted for contract:");
   console.log("    - Proof hex length:", proofHex.length);
   console.log("    - Public inputs (bytes32[]):", publicInputsBytes32);
-  console.log("      - [0] minimum_threshold_of_credit_score:", publicInputsBytes32[0]);
+  console.log("      - [0] invoice_merkle_root:", publicInputsBytes32[0]);
   console.log("      - [1] nullifier_hash:", publicInputsBytes32[1]);
-  console.log("      - [2] invoice_merkle_root:", publicInputsBytes32[2]);
 
   // Step 3.5: Verify proof locally before sending to contract
   console.log("\n🔍 Step 3.5: Verifying proof locally...");
@@ -236,14 +234,6 @@ const main = async () => {
     throw new Error("Proof verification failed locally. Cannot proceed with contract interaction.");
   }
   
-  console.log("\n⚠️  IMPORTANT NOTE:");
-  console.log("  If the on-chain verification fails but local verification passes,");
-  console.log("  the deployed verifier contract may not match the current circuit.");
-  console.log("  To fix this:");
-  console.log("  1. Rebuild the circuit: cd circuits/invoice-refactoring && ./build.sh");
-  console.log("  2. Copy new verifier: cp target/Verifier.sol ../../contracts/src/circuits/InvoiceRefactoringHonkVerifier.sol");
-  console.log("  3. Redeploy contracts: cd ../../contracts && forge script ...");
-
   // Step 4: Check USDC balance and deposit to factoring contract
   console.log("\n💰 Step 4: Checking USDC balance and depositing to factoring contract...");
   
@@ -361,6 +351,7 @@ const main = async () => {
     console.log("  ✓ Final supplier balance:", formatUnits(finalSupplierBalance, 6), "USDC");
 
     // Check nullifier hash usage
+    // Public inputs: [0] = invoice_merkle_root, [1] = nullifier_hash
     const nullifierHash = publicInputsBytes32[1];
     const isUsed = await publicClient.readContract({
       address: INVOICE_FACTORING_ADDRESS,

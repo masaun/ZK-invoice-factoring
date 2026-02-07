@@ -78,9 +78,8 @@ export const generateProof = async (
   // Prepare circuit inputs
   const circuitInputs = {
     public_inputs: {
-      minimum_threshold_of_credit_score: minimumCreditScore.toString(),
-      nullifier_hash: nullifierHash.toString(),
-      invoice_merkle_root: merkleRoot.toString()
+      invoice_merkle_root: merkleRoot.toString(),
+      nullifier_hash: nullifierHash.toString()
     },
     private_inputs: {
       invoice: {
@@ -93,7 +92,8 @@ export const generateProof = async (
         invoice_acceptance_timestamp: invoice.invoice_acceptance_timestamp.toString()
       },
       buyer_solvency: {
-        buyer_credit_score: buyerCreditScore.toString()
+        buyer_credit_score: buyerCreditScore.toString(),
+        minimum_threshold_of_credit_score: minimumCreditScore.toString()
       },
       merkle_proof_parameters: {
         invoice_merkle_proof_length: merkleProof.siblings.length,
