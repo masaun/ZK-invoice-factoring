@@ -17,7 +17,8 @@ use crate::{
     // @dev -  Imports the Structs
     types::{
         //invoice::Invoice,
-        public_inputs::PublicInputs
+        public_inputs::PublicInputs,
+        public_outputs::PublicOutputs
     },
 
     // @dev - The length of the Merkle proof for invoice commitments
@@ -101,7 +102,6 @@ fn test_main_success() {
     // @dev - Construct PublicInputs and PrivateInputs struct data
     let public_inputs = PublicInputs {
         nullifier_hash,
-        minimum_threshold_of_credit_score,
         invoice_merkle_root
     };
     
@@ -116,7 +116,8 @@ fn test_main_success() {
             invoice_acceptance_timestamp
         },
         buyer_solvency: BuyerSolvency {
-            buyer_credit_score
+            buyer_credit_score,
+            minimum_threshold_of_credit_score
         },
         merkle_proof_parameters: MerkleProofParameters {
             invoice_merkle_proof_length,
@@ -133,7 +134,7 @@ fn test_main_success() {
     };
 
     // @dev - Call the main function
-    let (invoice_merkle_root, nullifier_hash) = main(public_inputs, private_inputs);
+    let public_outputs = main(public_inputs, private_inputs);
 
     // @dev - Check Constraint: the invoice commitment (hash)
     let computed_invoice_commitment = poseidon_hash_6(
