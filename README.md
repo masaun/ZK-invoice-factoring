@@ -93,3 +93,45 @@ Buyer ────────────────────────�
 ## DEMO Video
 
 - https://www.loom.com/share/054dc11102a741289d08b5c505fed7af
+
+
+<br>
+
+## Installation
+
+## Noir ZK circuit
+
+- Circuit Test
+```bash
+cd circuits/invoice-refactoring
+
+sh circuit_test.sh
+```
+
+<br>
+
+- Circuit Artifacts & Solidity Verifier generation
+```bash
+cd circuits/invoice-refactoring
+
+sh build.sh
+```
+
+
+<br>
+
+## Run the e2e script
+
+- Normal e2e script (without the Data Protector of iExec TEE)
+```bash
+cd scripts/invoice-refactoring
+bun run e2e
+```
+
+<br>
+
+- e2e script with the Data Protector of iExec TEE
+```bash
+cd scripts/invoice-refactoring
+bun run e2e:iExec-TEE-DataProtector
+```
