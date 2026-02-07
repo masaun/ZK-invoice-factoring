@@ -3,15 +3,22 @@ import { generateProof, verifyProof, generateRandomInt, createInvoiceCommitment,
 import { createWalletClient, createPublicClient, http, parseUnits, formatUnits, type WalletClient, type PublicClient, type Address } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import * as dotenv from "dotenv";
-import * as path from "path";
+import { config } from "dotenv";
+import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 // Load environment variables from contracts/.env
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const envPath = path.resolve(__dirname, "../../../contracts/.env");
-dotenv.config({ path: envPath });
+const __dirname = dirname(__filename);
+const envPath = resolve(__dirname, "../../../contracts/.env");
+
+console.log("📂 Loading environment from:", envPath);
+const result = config({ path: envPath });
+
+if (result.error) {
+  console.error("❌ Error loading .env file:", result.error);
+  throw result.error;
+}
 
 // Deployed contract addresses from .env
 const INVOICE_FACTORING_ADDRESS = process.env.INVOICE_FACTORING_CONTRACT_ADDRESS as Address;
@@ -46,7 +53,7 @@ const INVOICE_FACTORING_ABI = [
   },
   {
     type: "function",
-    name: "depositUSDCForFactoringCompany",
+    name: "depositUSDC",
     inputs: [{ name: "amount", type: "uint256" }],
     outputs: [],
     stateMutability: "nonpayable"
@@ -126,25 +133,30 @@ const ERC20_ABI = [
  * 4. Call factorInvoice() on the smart contract to receive advance payment
  */
 const main = async () => {
-  console.log("\n📋 Starting E2E Test: Invoice Factoring on Arbitrum Sepolia");
-  console.log("=".repeat(70));
+  try {
+    console.log("\n📋 Starting E2E Test: Invoice Factoring on Arbitrum Sepolia");
+    console.log("=".repeat(70));
 
-  // Setup wallet and clients
-  const account = privateKeyToAccount(PRIVATE_KEY);
-  
-  const walletClient: WalletClient = createWalletClient({
-    account,
-    chain: arbitrumSepolia,
-    transport: http(RPC_URL)
-  });
+    console.log("\n🔌 Setting up wallet and clients...");
+    // Setup wallet and clients
+    const account = privateKeyToAccount(PRIVATE_KEY);
+    console.log("  ✓ Account created from private key");
+    
+    const walletClient: WalletClient = createWalletClient({
+      account,
+      chain: arbitrumSepolia,
+      transport: http(RPC_URL)
+    });
+    console.log("  ✓ Wallet client created");
 
-  const publicClient: PublicClient = createPublicClient({
-    chain: arbitrumSepolia,
-    transport: http(RPC_URL)
-  });
+    const publicClient: PublicClient = createPublicClient({
+      chain: arbitrumSepolia,
+      transport: http(RPC_URL)
+    });
+    console.log("  ✓ Public client created");
 
-  console.log("\n✅ Wallet connected:");
-  console.log("  - Address:", account.address);
+    console.log("\n✅ Wallet connected:");
+    console.log("  - Address:", account.address);
 
   // Step 1: Create test invoice
   console.log("\n📝 Step 1: Creating test invoice...");
@@ -276,7 +288,7 @@ const main = async () => {
     const depositTxHash = await walletClient.writeContract({
       address: INVOICE_FACTORING_ADDRESS,
       abi: INVOICE_FACTORING_ABI,
-      functionName: "depositUSDCForFactoringCompany",
+      functionName: "depositUSDC",
       args: [depositAmount]
     });
 
@@ -406,4 +418,16 @@ const main = async () => {
     
     throw error;
   }
+  } catch (mainError) {
+    console.error("\n❌ Fatal error in main function:");
+    console.error(mainError);
+    throw mainError;
+  }
 };
+
+console.log("\n🚀 Initiating e2e test...\n");
+main().catch((error) => {
+  console.error("\n❌ Unhandled error:");
+  console.error(error);
+  process.exit(1);
+});

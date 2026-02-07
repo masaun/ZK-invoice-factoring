@@ -13,6 +13,9 @@ event InvoiceFactored(
 /**
  * @title 
  * @notice - ZK InvoiceRefactoring Proof-triggered loan against an invoice
+ * @dev - This contract owner/operator is a "Factoring Company" that provides invoice factoring services to "Suppliers"
+ * @dev - This contract allows a "Supplier" to factor their invoice using a valid ZK InvoiceRefactoring Proof - so that the "Supplier" can receive an advance amount of funds in USDC before their original invoice due date.
+ * @dev - This contract allows a "Buyer" to pay the "Factoring Company" (= the contract owner/operator) the original invoice amount in USDC at the original invoice due date.
  */
 contract InvoiceFactoring {
     InvoiceRefactoringHonkVerifier public invoiceRefactoringHonkVerifier;
@@ -28,6 +31,7 @@ contract InvoiceFactoring {
 
     /**
      * @notice - Factor a given invoice using a ZK InvoiceRefactoring Proof
+     * @dev - A "Supplier" would call this function to factor a given invoice - so that the "Supplier" can receive an advance amount of funds in USDC before their original invoice due date
      */
     function factorInvoice(
         bytes calldata proof, 
@@ -61,14 +65,38 @@ contract InvoiceFactoring {
         emit InvoiceFactored(publicInputs[0], invoiceSupplier, advanceAmount);
     }
 
-    
     /**
-     * @notice - A factoring company deposit USDC into this contract for paying an advance amount of funds to invoice suppliers
+     * @notice - A "Buyer" would call this function to pay the original invoice amount in USDC
      */
-    function depositUSDCForFactoringCompany(uint256 amount) external {
+    function payOriginalInvoiceAmount(uint256 originalInvoiceAmount) external {
+        // @dev - Implementation would be added in the future
+        usdc.transferFrom(msg.sender, address(this), originalInvoiceAmount);
+    }
+
+    /**
+     * @notice - A "Factoring Company" would deposit USDC into this contract for paying an advance amount of funds to invoice suppliers
+     */
+    function depositUSDC(uint256 amount) external {
         // @dev - This caller must be a factoring company.
         usdc.transferFrom(msg.sender, address(this), amount);
     }
+
+    // /**
+    //  * @notice - A "Factoring Company" would deposit USDC into this contract for paying an advance amount of funds to invoice suppliers
+    //  */
+    // function depositUSDCIntoContract(uint256 amount) external {
+    //     require(msg.sender == owner()), "Only the contract can call this function");
+    //     // @dev - This caller must be a factoring company.
+    //     usdc.transferFrom(msg.sender, address(this), amount);
+    // }
+
+    // /**
+    //  * @notice - A "Factoring Company" would withdraw USDC from this contract
+    //  */
+    // function withdrawUSDCFromContract(uint256 amount) external {
+    //     require(msg.sender == owner()), "Only the contract can call this function");
+    //     usdc.transferFrom(address(this), msg.sender, amount);
+    // }
 }
 
 
