@@ -15,7 +15,8 @@ use libs::poseidon::{
 
 // @dev -  Imports the Structs
 use types::{
-    public_inputs::PublicInputs
+    public_inputs::PublicInputs,
+    public_outputs::PublicOutputs,
 };
 
 // @dev - The length of the Merkle proof for invoice commitment merkle proof
@@ -41,7 +42,8 @@ pub struct Invoice {
 
 // @dev - The BuyerSolvency struct, which store the buyer's solvency details
 pub struct BuyerSolvency {
-    buyer_credit_score: Field
+    buyer_credit_score: Field,
+    minimum_threshold_of_credit_score: Field,
 }
 
 // @dev - The MerkleProofParameters struct, which store the merkle proof parameter of invoice commitment merkle proof in the invoice commitments merkle tree.
@@ -76,10 +78,10 @@ pub struct PrivateInputs {
 pub fn main(
     public_inputs: PublicInputs,
     private_inputs: PrivateInputs
-) -> pub (Field, Field) {
+) -> pub (PublicOutputs) {
     // ----- PUBLIC INPUTS -----  
+    let invoice_merkle_root = public_inputs.invoice_merkle_root;
     let nullifier_hash = public_inputs.nullifier_hash;
-    let minimum_threshold_of_credit_score = public_inputs.minimum_threshold_of_credit_score;
 
     // ----- PRIVATE INPUTS (Invoice) -----
     let invoice_commitment = private_inputs.invoice.invoice_commitment;
@@ -97,7 +99,7 @@ pub fn main(
 
     // ----- PRIVATE INPUTS (Buyer Solvency) -----
     let buyer_credit_score = private_inputs.buyer_solvency.buyer_credit_score;
-
+    let minimum_threshold_of_credit_score = private_inputs.buyer_solvency.minimum_threshold_of_credit_score;
     // ----- PRIVATE INPUTS (Merkle proof parameters of the invoice commitment merkle tree) -----
     let invoice_merkle_proof_length = private_inputs.merkle_proof_parameters.invoice_merkle_proof_length;
     let invoice_merkle_proof_indices = private_inputs.merkle_proof_parameters.invoice_merkle_proof_indices;
@@ -176,5 +178,9 @@ pub fn main(
     assert(nullifier_hash == computed_nullifier_hash, "invalid nullifier");
 
     // @dev - Return a new nullifier hash and a new invoice commitment (merkle tree's) merkle root
-    (invoice_merkle_root, nullifier_hash)
+    let public_outputs = PublicOutputs {
+        invoice_merkle_root,
+        nullifier_hash,
+    };
+    public_outputs
 }

@@ -204,15 +204,16 @@ const main = async () => {
   console.log("  ✓ ZK proof generated successfully!");
   console.log("  - Proof size:", proof.length, "bytes");
   console.log("  - Public inputs from circuit:", publicInputs);
-  console.log("    - [0] invoice_merkle_root:", publicInputs[0]);
+  console.log("    - [0] minimum_threshold_of_credit_score:", publicInputs[0]);
   console.log("    - [1] nullifier_hash:", publicInputs[1]);
+  console.log("    - [2] invoice_merkle_root:", publicInputs[2]);
 
   // Convert proof to hex string
   const proofHex = `0x${Buffer.from(proof).toString('hex')}` as `0x${string}`;
   
   // Convert public inputs to bytes32 array
-  // Circuit returns: [invoice_merkle_root, nullifier_hash]
-  // This matches what the contract expects!
+  // Circuit returns: [minimum_threshold_of_credit_score, nullifier_hash, invoice_merkle_root]
+  // ALL public inputs must be passed to the verifier contract
   const publicInputsBytes32 = publicInputs.map((input: string) => {
     // Ensure the input is a 32-byte hex string
     const hex = BigInt(input).toString(16).padStart(64, '0');
@@ -222,8 +223,9 @@ const main = async () => {
   console.log("  ✓ Proof formatted for contract:");
   console.log("    - Proof hex length:", proofHex.length);
   console.log("    - Public inputs (bytes32[]):", publicInputsBytes32);
-  console.log("      - [0] invoice_merkle_root:", publicInputsBytes32[0]);
+  console.log("      - [0] minimum_threshold_of_credit_score:", publicInputsBytes32[0]);
   console.log("      - [1] nullifier_hash:", publicInputsBytes32[1]);
+  console.log("      - [2] invoice_merkle_root:", publicInputsBytes32[2]);
 
   // Step 3.5: Verify proof locally before sending to contract
   console.log("\n🔍 Step 3.5: Verifying proof locally...");
