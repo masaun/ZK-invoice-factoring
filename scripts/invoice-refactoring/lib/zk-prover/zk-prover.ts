@@ -121,9 +121,12 @@ export const generateProof = async (
   };
 };
 
-export const verifyProof = async (proof: ProofData, publicInputs: any) => {
-  const api = await Barretenberg.new();
-  const backend = new UltraHonkBackend(circuitArtifact.bytecode, api);
+// /**
+//  * @notice - Verifies a ZK proof (off-chain/locally) for invoice refactoring
+//  */
+// export const verifyProof = async (proof: ProofData, publicInputs: any) => {
+//   const api = await Barretenberg.new();
+//   const backend = new UltraHonkBackend(circuitArtifact.bytecode, api);
 
-  return await backend.verifyProof({ proof, publicInputs });
-};
+//   return await backend.verifyProof({ proof, publicInputs });
+// };

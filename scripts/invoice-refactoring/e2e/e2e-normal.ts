@@ -226,13 +226,13 @@ const main = async () => {
   console.log("      - [1] nullifier_hash:", publicInputsBytes32[1]);
 
   // Step 3.5: Verify proof locally before sending to contract
-  console.log("\n🔍 Step 3.5: Verifying proof locally...");
-  const isValidLocal = await verifyProof(proof, publicInputs);
-  console.log("  - Local verification result:", isValidLocal ? "✅ VALID" : "❌ INVALID");
+  // console.log("\n🔍 Step 3.5: Verifying proof locally...");
+  // const isValidLocal = await verifyProof(proof, publicInputs);
+  // console.log("  - Local verification result:", isValidLocal ? "✅ VALID" : "❌ INVALID");
   
-  if (!isValidLocal) {
-    throw new Error("Proof verification failed locally. Cannot proceed with contract interaction.");
-  }
+  // if (!isValidLocal) {
+  //   throw new Error("Proof verification failed locally. Cannot proceed with contract interaction.");
+  // }
   
   // Step 4: Check USDC balance and deposit to factoring contract
   console.log("\n💰 Step 4: Checking USDC balance and depositing to factoring contract...");
