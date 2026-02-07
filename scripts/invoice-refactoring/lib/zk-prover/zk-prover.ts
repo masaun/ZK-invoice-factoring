@@ -112,7 +112,7 @@ export const generateProof = async (
 
   const { witness } = await noir.execute(circuitInputs);
   const { proof, publicInputs } = await backend.generateProof(witness, {
-    verifierTarget: 'evm'
+    verifierTarget: 'evm' // @dev - This option is for the on-chain verification using the Solidity Verifier
   });
 
   return {
