@@ -111,7 +111,9 @@ export const generateProof = async (
   };
 
   const { witness } = await noir.execute(circuitInputs);
-  const { proof, publicInputs } = await backend.generateProof(witness);
+  const { proof, publicInputs } = await backend.generateProof(witness, {
+    verifierTarget: 'evm'
+  });
 
   return {
     proof,
