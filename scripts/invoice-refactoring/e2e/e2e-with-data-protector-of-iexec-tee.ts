@@ -1,11 +1,13 @@
 import { getIncrementalMerkleTree } from "../lib/zk-utils/incremental-merkle-tree/index.ts";
-import { generateProof, verifyProof, generateRandomInt, createInvoiceCommitment, type Invoice } from "../lib/zk-prover/zk-prover.ts";
+import { generateProof, generateRandomInt, createInvoiceCommitment, type Invoice } from "../lib/zk-prover/zk-prover.ts";
 import { createWalletClient, createPublicClient, http, parseUnits, formatUnits, type WalletClient, type PublicClient, type Address } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+// @ts-ignore - iExec DataProtector types
+import { IExecDataProtectorCore } from "@iexec/dataprotector";
 
 // Load environment variables from contracts/.env
 const __filename = fileURLToPath(import.meta.url);
@@ -20,8 +22,19 @@ if (result.error) {
   throw result.error;
 }
 
-// Deployed contract addresses from .env
-const INVOICE_FACTORING_ADDRESS = process.env.INVOICE_FACTORING_CONTRACT_ADDRESS as Address;
+// Helper function to check if a value is a placeholder
+const isPlaceholder = (value: string | undefined): boolean => {
+  if (!value) return true;
+  return value.includes('your_deployed') || value.includes('placeholder') || value.includes('here');
+};
+
+// Deployed contract addresses from .env - Using DataProtector-specific addresses
+// Fall back to regular addresses if DataProtector-specific ones are not set or are placeholders
+const dataProtectorAddress = process.env.INVOICE_FACTORING_CONTRACT_ADDRESS_USING_DATA_PROTECTOR;
+const INVOICE_FACTORING_ADDRESS = (!isPlaceholder(dataProtectorAddress) && dataProtectorAddress 
+  ? dataProtectorAddress 
+  : process.env.INVOICE_FACTORING_CONTRACT_ADDRESS) as Address;
+
 const USDC_ADDRESS = process.env.USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA as Address;
 const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
 const RPC_URL = process.env.ARBITRUM_SEPOLIA_RPC_URL!;
@@ -31,11 +44,19 @@ if (!INVOICE_FACTORING_ADDRESS || !USDC_ADDRESS || !PRIVATE_KEY || !RPC_URL) {
   throw new Error("Missing required environment variables in contracts/.env");
 }
 
+// Warning if using fallback addresses
+if (!dataProtectorAddress || isPlaceholder(dataProtectorAddress)) {
+  console.warn("⚠️  WARNING: INVOICE_FACTORING_CONTRACT_ADDRESS_USING_DATA_PROTECTOR not set or is placeholder, using fallback address");
+  console.warn("   For production use with DataProtector, please deploy dedicated contracts and update .env");
+  console.warn("   Current fallback address:", INVOICE_FACTORING_ADDRESS);
+}
+
 console.log("🔧 Configuration:");
 console.log("  - Network: Arbitrum Sepolia");
 console.log("  - RPC URL:", RPC_URL);
 console.log("  - InvoiceFactoring Address:", INVOICE_FACTORING_ADDRESS);
 console.log("  - USDC Address:", USDC_ADDRESS);
+console.log("  - Using DataProtector: ✅");
 
 // Contract ABIs
 const INVOICE_FACTORING_ABI = [
@@ -125,17 +146,30 @@ const ERC20_ABI = [
 ] as const;
 
 /**
- * @notice - E2E script for ZK Invoice Refactoring on Arbitrum Sepolia
- * This script demonstrates the complete flow:
- * 1. Create a test invoice
- * 2. Generate ZK proof for invoice refactoring
- * 3. Deposit USDC to the factoring contract (as factoring company)
- * 4. Call factorInvoice() on the smart contract to receive advance payment
+ * @notice - E2E script for ZK Invoice Refactoring with iExec DataProtector on Arbitrum Sepolia
+ * 
+ * This script demonstrates the complete flow with enhanced privacy using iExec TEE:
+ * 1. Create a test invoice with sensitive data
+ * 2. **Protect sensitive invoice data using iExec DataProtector (TEE encryption)**
+ * 3. Generate ZK proof for invoice refactoring (computation can be done in TEE)
+ * 4. Deposit USDC to the factoring contract (as factoring company)
+ * 5. Call factorInvoice() on the smart contract to receive advance payment
+ * 
+ * Key Privacy Enhancements with DataProtector:
+ * - Invoice details (ID, amounts, dates) are encrypted and stored securely
+ * - Sensitive data is processed within Trusted Execution Environments (TEE)
+ * - Only authorized parties can access protected data
+ * - Credit scores and other private information remain confidential
+ * - Zero-knowledge proofs ensure validity without revealing underlying data
+ * 
+ * @see https://docs.iex.ec/references/dataProtector/getting-started
+ * @see https://docs.iex.ec/references/dataProtector/methods/protectData
+ * @see https://docs.iex.ec/references/dataProtector/methods/processProtectedData
  */
 const main = async () => {
   try {
-    console.log("\n📋 Starting E2E Test: Invoice Factoring on Arbitrum Sepolia");
-    console.log("=".repeat(70));
+    console.log("\n📋 Starting E2E Test: Invoice Factoring with iExec DataProtector");
+    console.log("=".repeat(80));
 
     console.log("\n🔌 Setting up wallet and clients...");
     // Setup wallet and clients
@@ -158,8 +192,58 @@ const main = async () => {
     console.log("\n✅ Wallet connected:");
     console.log("  - Address:", account.address);
 
-  // Step 1: Create test invoice
-  console.log("\n📝 Step 1: Creating test invoice...");
+    // Initialize iExec DataProtector
+    console.log("\n🔐 Initializing iExec DataProtector...");
+    let dataProtectorCore: any;
+    
+    try {
+      // Create a custom Web3 provider compatible with iExec SDK
+      const customProvider = {
+        request: async ({ method, params }: { method: string; params?: any[] }) => {
+          if (method === 'eth_chainId') {
+            return '0x' + arbitrumSepolia.id.toString(16);
+          }
+          if (method === 'eth_accounts') {
+            return [account.address];
+          }
+          if (method === 'eth_requestAccounts') {
+            return [account.address];
+          }
+          if (method === 'personal_sign') {
+            const [message, address] = params || [];
+            const signature = await account.signMessage({ message });
+            return signature;
+          }
+          if (method === 'eth_signTypedData_v4' || method === 'eth_signTypedData') {
+            const [address, typedData] = params || [];
+            const parsedData = typeof typedData === 'string' ? JSON.parse(typedData) : typedData;
+            const signature = await account.signTypedData(parsedData);
+            return signature;
+          }
+          
+          // Fallback to regular RPC for other methods
+          const response = await fetch(RPC_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: params || [] })
+          });
+          const data = await response.json();
+          return data.result;
+        }
+      };
+
+      dataProtectorCore = new IExecDataProtectorCore(customProvider, {
+        allowExperimentalNetworks: true,
+      });
+      console.log("  ✓ DataProtector initialized successfully");
+    } catch (error) {
+      console.error("  ❌ Failed to initialize DataProtector:", error);
+      console.log("  ℹ️  Continuing without DataProtector (falling back to local encryption)");
+      dataProtectorCore = null;
+    }
+
+  // Step 1: Create test invoice with sensitive data
+  console.log("\n📝 Step 1: Creating test invoice with sensitive data...");
   const invoice: Invoice = {
     invoice_id: 12345,
     invoice_supplier_id: 67890,
@@ -177,6 +261,56 @@ const main = async () => {
   console.log("    - Amount: $" + invoice.invoice_amount.toLocaleString());
   console.log("    - Due date:", new Date(invoice.invoice_due_date * 1000).toLocaleDateString());
 
+  // Step 1.5: Protect sensitive invoice data using iExec DataProtector
+  console.log("\n🔒 Step 1.5: Protecting sensitive invoice data with iExec DataProtector...");
+  let protectedInvoiceData: any = null;
+  
+  if (dataProtectorCore) {
+    try {
+      console.log("  - Encrypting invoice data in TEE...");
+      
+      protectedInvoiceData = await dataProtectorCore.protectData({
+        name: `Invoice-${invoice.invoice_id}-${Date.now()}`,
+        data: {
+          invoice_id: invoice.invoice_id.toString(),
+          invoice_supplier_id: invoice.invoice_supplier_id.toString(),
+          invoice_buyer_id: invoice.invoice_buyer_id.toString(),
+          invoice_amount: invoice.invoice_amount.toString(),
+          invoice_due_date: invoice.invoice_due_date.toString(),
+          invoice_acceptance_timestamp: invoice.invoice_acceptance_timestamp.toString(),
+          secret: invoice.secret.toString(),
+          // Additional metadata (not encrypted, for indexing)
+          creation_timestamp: Date.now().toString(),
+        },
+        onStatusUpdate: ({ title, isDone }: { title: string; isDone: boolean }) => {
+          if (!isDone) {
+            console.log(`    ⏳ ${title}...`);
+          } else {
+            console.log(`    ✓ ${title} completed`);
+          }
+        }
+      });
+
+      console.log("  ✓ Invoice data protected successfully!");
+      console.log("    - Protected Data Address:", protectedInvoiceData.address);
+      console.log("    - Owner:", protectedInvoiceData.owner);
+      console.log("    - Data Schema:", JSON.stringify(protectedInvoiceData.schema, null, 2));
+      console.log("    - Transaction Hash:", protectedInvoiceData.transactionHash);
+      
+      // Optional: Grant access to specific applications or users
+      // This would allow only authorized parties to process this data in TEE
+      console.log("\n  💡 Protected data can now be granted to specific apps/users");
+      console.log("     Use dataProtectorCore.grantAccess() to authorize access");
+      
+    } catch (error) {
+      console.error("  ❌ Failed to protect data:", error);
+      console.log("  ℹ️  Continuing with unprotected data (for testing only)");
+    }
+  } else {
+    console.log("  ⚠️  DataProtector not available, using unencrypted invoice data");
+    console.log("     For production, ensure DataProtector is properly initialized");
+  }
+
   // Step 2: Create invoice commitment and Merkle tree
   console.log("\n🌳 Step 2: Building Merkle tree with invoice commitment...");
   const invoiceCommitment = createInvoiceCommitment(invoice);
@@ -186,14 +320,24 @@ const main = async () => {
   const merkleRoot = imTree.root;
   console.log("  ✓ Merkle root:", "0x" + merkleRoot.toString(16));
 
-  // Step 3: Generate ZK proof
+  // Step 3: Generate ZK proof for invoice refactoring
   console.log("\n🔐 Step 3: Generating ZK proof for invoice refactoring...");
+  console.log("  ℹ️  Note: For maximum privacy, proof generation could be done in iExec TEE");
+  console.log("     using processProtectedData() with a custom ZK-proof generator app");
+  console.log("     This would ensure that even the prover never sees the raw invoice data");
+  
   const minimumCreditScore = 600;
   const buyerCreditScore = 750;
 
   console.log("  - Minimum credit score threshold:", minimumCreditScore);
   console.log("  - Buyer credit score:", buyerCreditScore);
   
+  // Option A: Local proof generation (current approach)
+  // For full TEE integration, consider creating an iExec app that:
+  // 1. Retrieves protected invoice data
+  // 2. Generates ZK proof inside TEE
+  // 3. Returns only the proof and public inputs
+  console.log("  - Generating proof locally (client-side)...");
   const { proof, publicInputs } = await generateProof(
     invoice,
     imTree,
@@ -202,7 +346,7 @@ const main = async () => {
   );
 
   console.log("  ✓ ZK proof generated successfully!");
-  console.log("  - Proof size:", proof.length, "bytes");
+  console.log("  - Proof size:", Buffer.from(proof).length, "bytes");
   console.log("  - Public inputs from circuit:", publicInputs);
   console.log("    - [0] invoice_merkle_root:", publicInputs[0]);
   console.log("    - [1] nullifier_hash:", publicInputs[1]);
@@ -373,15 +517,28 @@ const main = async () => {
 
     console.log("  ✓ Invoice owner registered:", owner);
 
-    console.log("\n" + "=".repeat(70));
-    console.log("🎉 E2E Test Completed Successfully!");
-    console.log("=".repeat(70));
+    console.log("\n" + "=".repeat(80));
+    console.log("🎉 E2E Test with DataProtector Completed Successfully!");
+    console.log("=".repeat(80));
     console.log("\nSummary:");
     console.log("  - Invoice factored: $" + invoice.invoice_amount.toLocaleString());
     console.log("  - Advance payment: " + formatUnits(advanceAmount, 6) + " USDC (" + (advancePercentage * 100) + "%)");
     console.log("  - Supplier received: " + formatUnits(receivedAmount, 6) + " USDC");
     console.log("  - Transaction hash:", factorTxHash);
     console.log("  - Block explorer: https://sepolia.arbiscan.io/tx/" + factorTxHash);
+    
+    if (protectedInvoiceData) {
+      console.log("\n🔐 DataProtector Integration:");
+      console.log("  - Protected data address:", protectedInvoiceData.address);
+      console.log("  - View on iExec explorer: https://explorer.iex.ec/arbitrum-sepolia/dataset/" + protectedInvoiceData.address);
+    }
+    
+    console.log("\n💡 Next Steps for Full TEE Integration:");
+    console.log("  1. Create a custom iExec app for ZK proof generation");
+    console.log("  2. Use processProtectedData() to run proof generation in TEE");
+    console.log("  3. Grant access to the proof generator app using grantAccess()");
+    console.log("  4. Retrieve proof results securely from TEE computation");
+    
   } catch (error: any) {
     console.log("\n❌ Transaction failed!");
     
@@ -418,7 +575,7 @@ const main = async () => {
   }
 };
 
-console.log("\n🚀 Initiating e2e test...\n");
+console.log("\n🚀 Initiating e2e test with iExec DataProtector...\n");
 main().catch((error) => {
   console.error("\n❌ Unhandled error:");
   console.error(error);

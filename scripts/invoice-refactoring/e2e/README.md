@@ -147,3 +147,237 @@ If you encounter issues:
 - The advance amount is set to 80% of the invoice amount by default
 - Local proof verification runs before submitting to ensure proof validity
 - The script handles USDC deposits automatically if the contract balance is insufficient
+
+---
+
+# E2E Test with iExec DataProtector (TEE)
+
+## Overview
+
+The `e2e-with-data-protector-of-iexec-tee.ts` script extends the standard e2e flow with enhanced privacy using iExec's DataProtector (Trusted Execution Environment).
+
+### Key Privacy Enhancements
+
+1. **Data Protection**: Sensitive invoice data is encrypted and stored using iExec DataProtector
+2. **TEE Computation**: Confidential computation in Trusted Execution Environments
+3. **Access Control**: Only authorized applications and users can access protected data
+4. **Zero-Knowledge Proofs**: Prove invoice validity without revealing sensitive details
+
+## Running the DataProtector E2E Test
+
+```bash
+cd scripts/invoice-refactoring
+bun run e2e:tee
+```
+
+## How DataProtector Integration Works
+
+### 1. DataProtector Initialization
+
+The script creates a custom Web3 provider that:
+- Signs messages and typed data with the private key
+- Communicates with iExec's infrastructure
+- Supports Arbitrum Sepolia network
+
+```typescript
+const dataProtectorCore = new IExecDataProtectorCore(customProvider, {
+  allowExperimentalNetworks: true,
+});
+```
+
+### 2. Protecting Invoice Data
+
+```typescript
+const protectedInvoiceData = await dataProtectorCore.protectData({
+  name: `Invoice-${invoice.invoice_id}-${Date.now()}`,
+  data: {
+    invoice_id: invoice.invoice_id.toString(),
+    invoice_supplier_id: invoice.invoice_supplier_id.toString(),
+    invoice_buyer_id: invoice.invoice_buyer_id.toString(),
+    invoice_amount: invoice.invoice_amount.toString(),
+    // ... other invoice fields
+  }
+});
+```
+
+This step:
+- Encrypts invoice data client-side using AES-256
+- Stores encrypted data on IPFS/Arweave
+- Deploys a protected data NFT on-chain
+- Returns a protected data address for future reference
+
+### 3. ZK Proof Generation (Current & Future)
+
+**Current Implementation** (Local):
+```typescript
+const { proof, publicInputs } = await generateProof(
+  invoice,
+  imTree,
+  minimumCreditScore,
+  buyerCreditScore
+);
+```
+
+**Future Enhancement** (TEE):
+For maximum privacy, proof generation can be moved to TEE:
+```typescript
+const result = await dataProtectorCore.processProtectedData({
+  protectedData: protectedInvoiceData.address,
+  app: ZK_PROOF_GENERATOR_APP_ADDRESS, // Custom iExec app
+  encryptResult: true,
+});
+```
+
+## Environment Variables
+
+### DataProtector-Specific Variables (Optional)
+
+Add these to `contracts/.env` if you want separate contract deployments for DataProtector testing:
+
+```env
+# Use these for dedicated DataProtector contract deployments
+INVOICE_FACTORING_CONTRACT_ADDRESS_USING_DATA_PROTECTOR=0x...
+HONK_VERIFIER_CONTRACT_ADDRESS_USING_DATA_PROTECTOR=0x...
+INVOICE_REFACTORING_HONK_VERIFIER_CONTRACT_ADDRESS_USING_DATA_PROTECTOR=0x...
+```
+
+If not set, the script will fall back to standard addresses with a warning.
+
+## Key Differences: Standard vs DataProtector
+
+| Feature | Standard E2E | DataProtector E2E |
+|---------|--------------|-------------------|
+| **Data Storage** | In-memory only | Encrypted on IPFS/Arweave |
+| **Data Access** | Anyone with code access | Only authorized apps/users |
+| **Proof Generation** | Local client-side | Can be done in TEE |
+| **Privacy Level** | Basic (ZK proofs only) | Enhanced (TEE + ZK proofs) |
+| **On-chain Footprint** | Minimal | Includes protected data NFT |
+
+## Expected Output with DataProtector
+
+When successful:
+
+```
+🎉 E2E Test with DataProtector Completed Successfully!
+================================================================================
+
+Summary:
+  - Invoice factored: $50,000
+  - Advance payment: 40000.0 USDC (80%)
+  - Supplier received: 40000.0 USDC
+  - Transaction hash: 0x...
+  - Block explorer: https://sepolia.arbiscan.io/tx/0x...
+
+🔐 DataProtector Integration:
+  - Protected data address: 0x...
+  - View on iExec explorer: https://explorer.iex.ec/arbitrum-sepolia/dataset/0x...
+
+💡 Next Steps for Full TEE Integration:
+  1. Create a custom iExec app for ZK proof generation
+  2. Use processProtectedData() to run proof generation in TEE
+  3. Grant access to the proof generator app using grantAccess()
+  4. Retrieve proof results securely from TEE computation
+```
+
+## Advanced Features & Future Enhancements
+
+### 1. Grant Access to Protected Data
+
+```typescript
+await dataProtectorCore.grantAccess({
+  protectedData: protectedInvoiceData.address,
+  authorizedApp: ZK_PROOF_APP_ADDRESS,
+  authorizedUser: '0x0000000000000000000000000000000000000000', // Any user
+  pricePerAccess: 0,
+  numberOfAccess: 1,
+});
+```
+
+### 2. Process Protected Data in TEE
+
+```typescript
+const result = await dataProtectorCore.processProtectedData({
+  protectedData: protectedInvoiceData.address,
+  app: CUSTOM_APP_ADDRESS,
+  encryptResult: true,
+  secrets: {
+    1: 'credit_score_api_key',
+    2: 'verification_token',
+  },
+});
+```
+
+### 3. Retrieve Results from TEE
+
+```typescript
+const { result } = await dataProtectorCore.getResultFromCompletedTask({
+  taskId: result.taskId,
+  pemPrivateKey: result.pemPrivateKey,
+  path: 'proof.bin',
+});
+```
+
+## Troubleshooting DataProtector
+
+### DataProtector Initialization Fails
+
+**Error**: `Failed to initialize DataProtector`
+
+**Solution**: 
+- Ensure you have the correct private key in `.env`
+- Check network connectivity to iExec infrastructure
+- Verify Arbitrum Sepolia RPC URL is accessible
+- Install `@iexec/dataprotector` package: `bun install`
+
+### Protected Data Creation Fails
+
+**Error**: `Failed to protect data`
+
+**Solution**:
+- Check wallet has sufficient RLC (native token on iExec sidechain)
+- Verify network supports DataProtector (Arbitrum Sepolia is supported)
+- Ensure data object structure is valid (all values should be strings)
+
+### Contract Address Not Set Warning
+
+**Warning**: `INVOICE_FACTORING_CONTRACT_ADDRESS_USING_DATA_PROTECTOR not set`
+
+**Solution**: This is just a warning. The script will use the standard contract address. To use dedicated contracts:
+1. Deploy new contracts for DataProtector testing
+2. Update `.env` with DataProtector-specific addresses
+
+## Resources
+
+### Documentation
+- [iExec DataProtector Docs](https://docs.iex.ec/references/dataProtector/getting-started)
+- [protectData Method](https://docs.iex.ec/references/dataProtector/methods/protectData)
+- [processProtectedData Method](https://docs.iex.ec/references/dataProtector/methods/processProtectedData)
+- [iExec Explorer](https://explorer.iex.ec/arbitrum-sepolia)
+
+### Examples
+- [iExec Next.js Starter](https://github.com/iExecBlockchainComputing/iexec-nextjs-starter)
+- [Step-by-Step Guide to Building on iExec](https://vigorous-station-f66.notion.site/Step-by-Step-Guide-to-Building-on-iExec-284df2792faa808b93b9ee9ebfc8b3a7)
+
+## Next Steps for Full TEE Integration
+
+### Recommended Enhancements
+
+1. **Create a Custom iExec App** for ZK proof generation:
+   - Package the Noir circuit and prover into a Docker container
+   - Deploy as an iExec application
+   - Process protected invoice data in TEE to generate proofs
+
+2. **Implement Full Access Control**:
+   - Use `grantAccess()` to authorize specific applications
+   - Restrict who can process invoice data
+   - Set pricing for data access
+
+3. **Add Result Encryption**:
+   - Use `encryptResult: true` in `processProtectedData()`
+   - Store private key securely for decryption
+   - Ensure only authorized parties can decrypt results
+
+4. **Deploy DataProtector-Specific Contracts**:
+   - Deploy separate contract instances for DataProtector flow
+   - Update `.env` with dedicated addresses
+   - Test isolation between standard and DataProtector flows
