@@ -2,7 +2,26 @@
 
 ## Overview
 
-- This project is still in progress.
+ZK Invoice Refactoring is a privacy-preserving invoice factoring platform that leverages zero-knowledge proofs to enable **suppliers** to access liquidity *without* `exposing sensitive business data` and `deposting any collateral`.
+
+The system allows **suppliers** to prove that their invoices have been accepted by **buyers** without revealing confidential information to the **factoring company** such as invoice amounts, payment terms, or buyer identities.
+
+### Key Features
+
+- **Privacy-First**: Uses Noir ZK circuits to generate proofs of invoice acceptance while keeping sensitive data private
+- **Trustless Verification**: Smart contracts verify ZK proofs on-chain without requiring trust in intermediaries
+- **Data Protector Integration**: Optional integration with iExec TEE for enhanced data protection during proof generation
+- **Enterprise Ready**: Designed to work with existing ERP systems and standard business workflows
+
+### Use Case
+
+Suppliers often need early access to cash tied up in unpaid invoices. Traditional invoice factoring requires sharing sensitive business information with third parties. 
+
+This project solves that problem by:
+1. Allowing suppliers to prove invoice acceptance using ZK proofs
+2. Enabling smart contracts to verify these proofs on-chain
+3. Facilitating instant liquidity provision without exposing confidential data and depositing any collateral.
+4. Maintaining privacy for both suppliers and buyers throughout the process
 
 <br>
 
@@ -48,6 +67,18 @@
 │ - Verifies artifact      │
 │ - Proves buyer approved  │
 └──────────────────────────┘
+        │
+        │ (6) ZK Invoice Refactoring Proof input
+        ▼
+┌─────────────────────────────────────┐
+│ Invoicing Factoring smart contract  │
+└───────┬─────────────────────────────┘
+        │
+        │ (7) Trigger to pay an advance amount in USDC to Supplier
+        ▼
+┌──────────────┐
+│ Supplier     │
+└───────┬──────┘
 ```
 
 <br>
