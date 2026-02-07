@@ -166,3 +166,25 @@ bun run e2e
 cd scripts/invoice-refactoring
 bun run e2e:iExec-TEE-DataProtector
 ```
+
+<br>
+
+## References
+
+- Noir ZK circuit
+  - [Noir Documentation](https://noir-lang.org/)
+  - [Barretenberg Documentation](https://aztecprotocol.github.io/barretenberg/)
+  - `noir-examples/solidity-example`
+    - `js/generate-proof.ts` (How to use the `verifierTarget: "evm"`): https://github.com/noir-lang/noir-examples/blob/master/solidity-example/js/generate-proof.ts#L16
+
+
+- iExec TEE - Deta Protector
+  - Step-by-Step Guide to Building on iExec
+    https://vigorous-station-f66.notion.site/Step-by-Step-Guide-to-Building-on-iExec-284df2792faa808b93b9ee9ebfc8b3a7
+
+  - iexec-nextjs-starter
+    https://github.com/iExecBlockchainComputing/iexec-nextjs-starter
+
+  - dataProtector
+    https://docs.iex.ec/references/dataProtector/getting-started
+
