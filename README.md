@@ -4,6 +4,16 @@
 
 - This project is still in progress.
 
+<br>
+
+## Tech Stack
+
+- **ZK Circuit**: `Noir` (`v1.0.0-beta.18`)
+   - ZK Circuit Library: `@aztec/bb.js` (`v3.0.0-devnet.6-patch.1`) & `@noir-lang/noir_js` (`v1.0.0-beta.18`)
+   - Incremental Merkle Tree (`IMT`) Library: `@zk-kit/imt` (`v2.0.0-beta.8`) 
+
+- **Smart Contract**: `Solidity`
+- **Blockchain**: Arbitrum Sepolia Testnet
 
 <br>
 
