@@ -57,7 +57,7 @@ cd contracts
 forge script script/Deploy.s.sol \
   --broadcast \
   --rpc-url $ARBITRUM_SEPOLIA_RPC_URL \
-  --private-key $PRIVATE_KEY
+  --private-key $SUPPLIER_PRIVATE_KEY
 ```
 
 Or if you use a deployment script:
@@ -106,7 +106,7 @@ Contract addresses and RPC URLs are loaded from `contracts/.env`:
 ARBITRUM_SEPOLIA_RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
 INVOICE_FACTORING_CONTRACT_ADDRESS=0x...
 USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA=0x...
-PRIVATE_KEY=0x...
+SUPPLIER_PRIVATE_KEY=0x...
 ```
 
 ## Expected Output
@@ -202,7 +202,7 @@ Summary:
 ## Technical Details
 
 - **Circuit**: `circuits/invoice-refactoring/src/main.nr`
-- **Proof System**: UltraHonk (via Barretenberg)
+- **Proof System**: UltraHonk (via Barretenberg & Noir)
 - **Network**: Arbitrum Sepolia
 - **Token**: Mock USDC (6 decimals)
 

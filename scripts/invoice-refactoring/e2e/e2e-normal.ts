@@ -23,11 +23,11 @@ if (result.error) {
 // Deployed contract addresses from .env
 const INVOICE_FACTORING_ADDRESS = process.env.INVOICE_FACTORING_CONTRACT_ADDRESS as Address;
 const USDC_ADDRESS = process.env.USDC_ADDRESS_MOCK_ON_ARBITRUM_SEPOLIA as Address;
-const PRIVATE_KEY = process.env.PRIVATE_KEY as `0x${string}`;
+const SUPPLIER_PRIVATE_KEY = process.env.SUPPLIER_PRIVATE_KEY;
 const RPC_URL = process.env.ARBITRUM_SEPOLIA_RPC_URL!;
 
 // Validate environment variables
-if (!INVOICE_FACTORING_ADDRESS || !USDC_ADDRESS || !PRIVATE_KEY || !RPC_URL) {
+if (!INVOICE_FACTORING_ADDRESS || !USDC_ADDRESS || !SUPPLIER_PRIVATE_KEY || !RPC_URL) {
   throw new Error("Missing required environment variables in contracts/.env");
 }
 
@@ -139,7 +139,7 @@ const main = async () => {
 
     console.log("\n🔌 Setting up wallet and clients...");
     // Setup wallet and clients
-    const account = privateKeyToAccount(PRIVATE_KEY);
+    const account = privateKeyToAccount(SUPPLIER_PRIVATE_KEY);
     console.log("  ✓ Account created from private key");
     
     const walletClient: WalletClient = createWalletClient({
