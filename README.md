@@ -1,8 +1,8 @@
-# ZK Invoice Refactoring
+# ZK Invoice Factoring
 
 ## Overview
 
-ZK Invoice Refactoring is a privacy-preserving invoice factoring platform that leverages `zero-knowledge proof` to enable **suppliers** to access liquidity *without* `exposing sensitive business data` and `deposting any collateral`.
+ZK Invoice Factoring is a privacy-preserving invoice factoring platform that leverages `zero-knowledge proof` to enable **suppliers** to access liquidity *without* `exposing sensitive business data` and `deposting any collateral`.
 
 The system allows **suppliers** to prove that their invoices have been accepted by **buyers** without revealing confidential information to the **factoring company** such as invoice amounts, payment terms, or buyer identities.
 
@@ -36,8 +36,46 @@ This project solves that problem by:
 
 <br>
 
+## Userflow
+
+```bash
+(1) Goods / Services
+Supplier ─────────────────────────▶ Buyer
+     │
+     │ (2) Invoice
+     ▼
+Buyer ─────────────────────────────▶ Buyer ERP / AP
+                                       │
+                                       │ (3) Invoice Acceptance
+                                       ▼
+                              Buyer ERP (System of Record)
+                                       │
+                                       │ (4) Acceptance Artifact
+                                       │     (API / EDI / Portal)
+                                       ▼
+                              Supplier ERP / Invoicing
+                                       │
+                                       │ (5) zkTLS Transcript
+                                       ▼
+                               Noir ZK Circuit (in this Invoice Factoring platform)
+                                       │
+                                       │ (6) ZK Proof
+                                       ▼
+                           Solidity Factoring Contract (in this Invoice Factoring platform)
+                                       │
+                                       │ (7) Liquidity
+                                       ▼
+                                   Supplier
+
+(8) Invoice Paid at Maturity
+Buyer ─────────────────────────────▶ Factor (SPV / Vault)
+```
+
+<br>
+
 ## Architecture
 
+- The scope of this **Invoice Factoring** platform would deal with the **userflow** above from `(5)` to `(7)`  
 ```bash
 ┌──────────────┐
 │ Buyer ERP    │
@@ -79,43 +117,6 @@ This project solves that problem by:
 ┌──────────────┐
 │ Supplier     │
 └───────┬──────┘
-```
-
-<br>
-
-## Userflow
-
-```bash
-(1) Goods / Services
-Supplier ─────────────────────────▶ Buyer
-     │
-     │ (2) Invoice
-     ▼
-Buyer ─────────────────────────────▶ Buyer ERP / AP
-                                       │
-                                       │ (3) Invoice Acceptance
-                                       ▼
-                              Buyer ERP (System of Record)
-                                       │
-                                       │ (4) Acceptance Artifact
-                                       │     (API / EDI / Portal)
-                                       ▼
-                              Supplier ERP / Invoicing
-                                       │
-                                       │ (5) zkTLS Transcript
-                                       ▼
-                               Noir ZK Circuit
-                                       │
-                                       │ (6) ZK Proof
-                                       ▼
-                           Solidity Factoring Contract
-                                       │
-                                       │ (7) Liquidity
-                                       ▼
-                                   Supplier
-
-(8) Invoice Paid at Maturity
-Buyer ─────────────────────────────▶ Factor (SPV / Vault)
 ```
 
 <br>
@@ -188,6 +189,15 @@ sh deploy.sh
 <br>
 
 ## Run the e2e script
+
+- Install the node modules with the `bun` CLI
+```bash
+cd scripts/invoice-refactoring
+
+bun install
+```
+
+<br>
 
 - Normal e2e script (without the Data Protector of iExec TEE)
 ```bash
