@@ -15,3 +15,6 @@ docs/
 
 # Extra
 .github/
+
+# Foundry
+foundry.lock
